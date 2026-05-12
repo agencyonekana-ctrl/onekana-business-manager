@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { 
   Table, 
   TableBody, 
@@ -47,7 +47,7 @@ export default function Departments() {
   async function fetchDepartments() {
     setLoading(true)
     try {
-      const list = await localData.db.departments.list()
+      const list = await dataClient.db.departments.list()
       setDepartments(list as Department[])
     } catch (error) {
       toast.error('Erreur lors du chargement des départements')
@@ -60,10 +60,10 @@ export default function Departments() {
     e.preventDefault()
     try {
       if (editingDept) {
-        await localData.db.departments.update(editingDept.id, formData)
+        await dataClient.db.departments.update(editingDept.id, formData)
         toast.success('Département mis à jour')
       } else {
-        await localData.db.departments.create(formData)
+        await dataClient.db.departments.create(formData)
         toast.success('Département ajouté')
       }
       setIsAddOpen(false)
@@ -78,7 +78,7 @@ export default function Departments() {
   async function handleDelete(id: string) {
     try {
       // Check if department has employees before deleting
-      const empCount = await localData.db.employees.count({ where: { departmentId: id } })
+      const empCount = await dataClient.db.employees.count({ where: { departmentId: id } })
       if (empCount > 0) {
         toast.error('Impossible de supprimer : ce département contient des employés')
         return
@@ -89,7 +89,7 @@ export default function Departments() {
 
     if (!confirm('Voulez-vous vraiment supprimer ce département ?')) return
     try {
-      await localData.db.departments.delete(id)
+      await dataClient.db.departments.delete(id)
       toast.success('Département supprimé')
       fetchDepartments()
     } catch (error) {

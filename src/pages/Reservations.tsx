@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import {
   Table,
   TableBody,
@@ -89,8 +89,8 @@ export default function Reservations() {
     setLoading(true)
     try {
       const [resList, typeList] = await Promise.all([
-        localData.db.reservations.list({ orderBy: { createdAt: 'desc' } }),
-        localData.db.reservationTypes.list(),
+        dataClient.db.reservations.list({ orderBy: { createdAt: 'desc' } }),
+        dataClient.db.reservationTypes.list(),
       ])
       setReservations(resList as Reservation[])
       setReservationTypes(typeList as ReservationType[])
@@ -109,10 +109,10 @@ export default function Reservations() {
     }
     try {
       if (editing) {
-        await localData.db.reservations.update(editing.id, formData)
+        await dataClient.db.reservations.update(editing.id, formData)
         toast.success('Réservation mise à jour')
       } else {
-        await localData.db.reservations.create(formData)
+        await dataClient.db.reservations.create(formData)
         toast.success('Réservation créée')
       }
       closeDialog()
@@ -125,7 +125,7 @@ export default function Reservations() {
   async function handleDelete(id: string) {
     if (!confirm('Supprimer cette réservation ?')) return
     try {
-      await localData.db.reservations.delete(id)
+      await dataClient.db.reservations.delete(id)
       toast.success('Réservation supprimée')
       fetchData()
     } catch {

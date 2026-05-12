@@ -59,4 +59,10 @@
   h6 {
     letter-spacing: 0;
   }
+
+  .tour-target-ring {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px hsl(var(--primary) / 0.12);
+  }
 }

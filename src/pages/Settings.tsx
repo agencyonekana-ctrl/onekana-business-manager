@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import {
   Card,
   CardContent,
@@ -19,6 +19,8 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Plus, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { PageHeader } from '../components/app/PageHeader'
+import { resetOnboardingGuide } from '../components/app/OnboardingGuide'
 import {
   Dialog,
   DialogContent,
@@ -54,10 +56,10 @@ export default function Settings() {
     setLoading(true)
     try {
       const [matList, resList, jobList, statusList] = await Promise.all([
-        localData.db.materialTypes.list(),
-        localData.db.reservationTypes.list(),
-        localData.db.jobTitles.list(),
-        localData.db.employeeStatuses.list(),
+        dataClient.db.materialTypes.list(),
+        dataClient.db.reservationTypes.list(),
+        dataClient.db.jobTitles.list(),
+        dataClient.db.employeeStatuses.list(),
       ])
       setMaterialTypes(matList as CategoryType[])
       setReservationTypes(resList as CategoryType[])
@@ -76,10 +78,10 @@ export default function Settings() {
     try {
       let table
       switch (dialogType) {
-        case 'material': table = localData.db.materialTypes; break
-        case 'reservation': table = localData.db.reservationTypes; break
-        case 'job': table = localData.db.jobTitles; break
-        case 'status': table = localData.db.employeeStatuses; break
+        case 'material': table = dataClient.db.materialTypes; break
+        case 'reservation': table = dataClient.db.reservationTypes; break
+        case 'job': table = dataClient.db.jobTitles; break
+        case 'status': table = dataClient.db.employeeStatuses; break
       }
       
       if (editingItem) {
@@ -102,10 +104,10 @@ export default function Settings() {
     try {
       let table
       switch (type) {
-        case 'material': table = localData.db.materialTypes; break
-        case 'reservation': table = localData.db.reservationTypes; break
-        case 'job': table = localData.db.jobTitles; break
-        case 'status': table = localData.db.employeeStatuses; break
+        case 'material': table = dataClient.db.materialTypes; break
+        case 'reservation': table = dataClient.db.reservationTypes; break
+        case 'job': table = dataClient.db.jobTitles; break
+        case 'status': table = dataClient.db.employeeStatuses; break
       }
       await table.delete(id)
       toast.success('Supprimé avec succès')
@@ -135,7 +137,23 @@ export default function Settings() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div>
+      <PageHeader
+        eyebrow="Administration"
+        title="Paramètres"
+        description="Personnalisez les listes internes et relancez le guide de prise en main pour accompagner les utilisateurs."
+        action={
+          <Button
+            variant="outline"
+            onClick={() => {
+              resetOnboardingGuide()
+              toast.success('Guide de prise en main relancé')
+            }}
+          >
+            Relancer le guide
+          </Button>
+        }
+      />
+      <div className="hidden">
         <h2 className="text-3xl font-bold tracking-tight">Paramètres</h2>
         <p className="text-muted-foreground">Personnalisez les types de données pour votre entreprise.</p>
       </div>

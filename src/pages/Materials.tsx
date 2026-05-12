@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { 
   Table, 
   TableBody, 
@@ -86,9 +86,9 @@ export default function Materials() {
     setLoading(true)
     try {
       const [matList, empList, typeList] = await Promise.all([
-        localData.db.materials.list(),
-        localData.db.employees.list(),
-        localData.db.materialTypes.list(),
+        dataClient.db.materials.list(),
+        dataClient.db.employees.list(),
+        dataClient.db.materialTypes.list(),
       ])
       setMaterials(matList as Material[])
       setEmployees(empList as Employee[])
@@ -111,10 +111,10 @@ export default function Materials() {
       }
 
       if (editingMaterial) {
-        await localData.db.materials.update(editingMaterial.id, dataToSave)
+        await dataClient.db.materials.update(editingMaterial.id, dataToSave)
         toast.success('Matériel mis à jour')
       } else {
-        await localData.db.materials.create(dataToSave)
+        await dataClient.db.materials.create(dataToSave)
         toast.success('Matériel ajouté')
       }
       
@@ -142,7 +142,7 @@ export default function Materials() {
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer ce matériel ?')) return
     try {
-      await localData.db.materials.delete(id)
+      await dataClient.db.materials.delete(id)
       toast.success('Matériel supprimé')
       fetchData()
     } catch (error) {

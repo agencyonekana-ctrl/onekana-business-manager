@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { localData } from '@/lib/local-data'
+import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Site } from '../types'
 
@@ -45,10 +45,10 @@ export function SitesTab({ sites, loading, onRefresh }: SitesTabProps) {
     e.preventDefault()
     try {
       if (editingSite) {
-        await localData.db.oohSites.update(editingSite.id, form)
+        await dataClient.db.oohSites.update(editingSite.id, form)
         toast.success('Site mis à jour')
       } else {
-        await localData.db.oohSites.create(form)
+        await dataClient.db.oohSites.create(form)
         toast.success('Site ajouté')
       }
       setIsDialogOpen(false)
@@ -63,7 +63,7 @@ export function SitesTab({ sites, loading, onRefresh }: SitesTabProps) {
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet élément ?')) return
     try {
-      await localData.db.oohSites.delete(id)
+      await dataClient.db.oohSites.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
     } catch (error) {

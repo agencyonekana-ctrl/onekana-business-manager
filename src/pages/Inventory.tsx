@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
 import { MapPin, Monitor, Map as MapIcon, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
@@ -8,6 +8,7 @@ import { SitesTab } from '../features/inventory/components/SitesTab'
 import { SupportsTab } from '../features/inventory/components/SupportsTab'
 import { EmplacementsTab } from '../features/inventory/components/EmplacementsTab'
 import { AssetsTab } from '../features/inventory/components/AssetsTab'
+import { PageHeader } from '../components/app/PageHeader'
 
 export default function Inventory() {
   const [sites, setSites] = useState<Site[]>([])
@@ -26,12 +27,12 @@ export default function Inventory() {
     setLoading(true)
     try {
       const [sList, supList, eList, aList, lList, cList] = await Promise.all([
-        localData.db.oohSites.list(),
-        localData.db.oohSupports.list(),
-        localData.db.oohEmplacements.list(),
-        localData.db.oohAssets.list(),
-        localData.db.oohCampaignLines.list(),
-        localData.db.oohCampaigns.list()
+        dataClient.db.oohSites.list(),
+        dataClient.db.oohSupports.list(),
+        dataClient.db.oohEmplacements.list(),
+        dataClient.db.oohAssets.list(),
+        dataClient.db.oohCampaignLines.list(),
+        dataClient.db.oohCampaigns.list()
       ])
       setSites(sList as Site[])
       setSupports(supList as Support[])
@@ -48,12 +49,13 @@ export default function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Gestion de l'Inventaire</h2>
-        <p className="text-muted-foreground">Gérez vos sites physiques, supports, emplacements et visuels (assets).</p>
-      </div>
+      <PageHeader
+        eyebrow="Ventes OOH"
+        title="Inventaire publicitaire"
+        description="Gérez les sites, supports, emplacements réservables et visuels dans une seule page à onglets."
+      />
 
-      <Tabs defaultValue="sites" className="w-full">
+      <Tabs defaultValue="sites" className="w-full" data-tour="inventory-tabs">
         <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
           <TabsTrigger value="sites" className="gap-2"><MapPin className="w-4 h-4" /> Sites</TabsTrigger>
           <TabsTrigger value="supports" className="gap-2"><Monitor className="w-4 h-4" /> Supports</TabsTrigger>

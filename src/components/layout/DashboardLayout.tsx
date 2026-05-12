@@ -8,14 +8,17 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Mail,
   MapPin,
   Megaphone,
   Package,
+  PackageCheck,
   Settings,
   Users,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { Button } from '../ui/button'
+import { OnboardingGuide } from '../app/OnboardingGuide'
 import {
   Sidebar,
   SidebarContent,
@@ -28,18 +31,42 @@ import {
   SidebarTrigger,
 } from '../ui/sidebar'
 
-const menuItems = [
-  { icon: LayoutDashboard, label: 'Tableau de bord', path: '/' },
-  { icon: Users, label: 'Équipe', path: '/employees' },
-  { icon: Building2, label: 'Départements', path: '/departments' },
-  { icon: Megaphone, label: 'Campagnes', path: '/campaigns' },
-  { icon: MapPin, label: 'Inventaire', path: '/inventory' },
-  { icon: Package, label: 'Matériels', path: '/materials' },
-  { icon: BookMarked, label: 'Réservations', path: '/reservations' },
-  { icon: FileText, label: 'Documents', path: '/documents' },
-  { icon: Calendar, label: 'Horaires', path: '/schedules' },
-  { icon: Settings, label: 'Paramètres', path: '/settings' },
+const menuGroups = [
+  {
+    label: 'Accueil',
+    items: [
+      { icon: LayoutDashboard, label: 'Tableau de bord', path: '/' },
+    ],
+  },
+  {
+    label: 'Ventes OOH',
+    items: [
+      { icon: Mail, label: 'Demandes clients', path: '/demandes' },
+      { icon: PackageCheck, label: 'Packs commerciaux', path: '/packs' },
+      { icon: Megaphone, label: 'Campagnes', path: '/campaigns' },
+      { icon: MapPin, label: 'Inventaire publicitaire', path: '/inventory' },
+    ],
+  },
+  {
+    label: 'Gestion interne',
+    items: [
+      { icon: Users, label: 'Equipe', path: '/employees' },
+      { icon: Package, label: 'Materiels', path: '/materials' },
+      { icon: FileText, label: 'Documents', path: '/documents' },
+      { icon: Calendar, label: 'Horaires', path: '/schedules' },
+    ],
+  },
+  {
+    label: 'Administration',
+    items: [
+      { icon: Building2, label: 'Departements', path: '/departments' },
+      { icon: BookMarked, label: 'Reservations agences', path: '/reservations' },
+      { icon: Settings, label: 'Parametres', path: '/settings' },
+    ],
+  },
 ]
+
+const menuItems = menuGroups.flatMap((group) => group.items)
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
@@ -54,36 +81,43 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <div className="min-w-0">
                 <span className="block text-sm font-black uppercase tracking-wide text-white">Back Office</span>
                 <span className="block text-[11px] font-semibold uppercase text-[#ffd026]">
-                  Régie & opérations
+                  Regie & operations
                 </span>
               </div>
             </div>
           </SidebarHeader>
           <SidebarContent className="p-2">
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.path}
-                      className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
-                          isActive
-                            ? 'bg-[#e31317] text-white'
-                            : 'text-white/70 hover:bg-white/10 hover:text-white'
-                        }`
-                      }
-                    >
-                      <item.icon className="h-5 w-5" />
-                      <span className="font-medium">{item.label}</span>
-                      {window.location.pathname === item.path && (
-                        <ChevronRight className="ml-auto h-4 w-4 opacity-50" />
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            {menuGroups.map((group) => (
+              <div key={group.label} className="mb-4">
+                <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-wide text-[#ffd026]">
+                  {group.label}
+                </div>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.path}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                              isActive
+                                ? 'bg-[#e31317] text-white'
+                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                            }`
+                          }
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="font-medium">{item.label}</span>
+                          {window.location.pathname === item.path && (
+                            <ChevronRight className="ml-auto h-4 w-4 opacity-50" />
+                          )}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </div>
+            ))}
           </SidebarContent>
           <div className="mt-auto space-y-4 border-t border-white/10 p-4">
             <div className="flex items-center gap-3 px-2">
@@ -101,7 +135,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               onClick={() => logout()}
             >
               <LogOut className="h-5 w-5" />
-              <span>Déconnexion</span>
+              <span>Deconnexion</span>
             </Button>
           </div>
         </Sidebar>
@@ -121,6 +155,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
           </main>
         </SidebarInset>
+        <OnboardingGuide />
       </div>
     </SidebarProvider>
   )

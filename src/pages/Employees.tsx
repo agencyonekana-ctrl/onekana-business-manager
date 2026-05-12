@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { 
   Table, 
   TableBody, 
@@ -82,10 +82,10 @@ export default function Employees() {
     setLoading(true)
     try {
       const [empList, deptList, jobList, statusList] = await Promise.all([
-        localData.db.employees.list(),
-        localData.db.departments.list(),
-        localData.db.jobTitles.list(),
-        localData.db.employeeStatuses.list(),
+        dataClient.db.employees.list(),
+        dataClient.db.departments.list(),
+        dataClient.db.jobTitles.list(),
+        dataClient.db.employeeStatuses.list(),
       ])
       setEmployees(empList as Employee[])
       setDepartments(deptList as Department[])
@@ -102,10 +102,10 @@ export default function Employees() {
     e.preventDefault()
     try {
       if (editingEmployee) {
-        await localData.db.employees.update(editingEmployee.id, formData)
+        await dataClient.db.employees.update(editingEmployee.id, formData)
         toast.success('Employé mis à jour')
       } else {
-        await localData.db.employees.create(formData)
+        await dataClient.db.employees.create(formData)
         toast.success('Employé ajouté')
       }
       setIsAddOpen(false)
@@ -127,7 +127,7 @@ export default function Employees() {
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet employé ?')) return
     try {
-      await localData.db.employees.delete(id)
+      await dataClient.db.employees.delete(id)
       toast.success('Employé supprimé')
       fetchData()
     } catch (error) {

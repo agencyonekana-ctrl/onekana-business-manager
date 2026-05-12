@@ -26,7 +26,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { localData } from '@/lib/local-data'
+import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Support } from '../types'
 
@@ -51,10 +51,10 @@ export function SupportsTab({ supports, loading, onRefresh }: SupportsTabProps) 
     e.preventDefault()
     try {
       if (editingSupport) {
-        await localData.db.oohSupports.update(editingSupport.id, form)
+        await dataClient.db.oohSupports.update(editingSupport.id, form)
         toast.success('Support mis à jour')
       } else {
-        await localData.db.oohSupports.create(form)
+        await dataClient.db.oohSupports.create(form)
         toast.success('Support ajouté')
       }
       setIsDialogOpen(false)
@@ -69,7 +69,7 @@ export function SupportsTab({ supports, loading, onRefresh }: SupportsTabProps) 
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet élément ?')) return
     try {
-      await localData.db.oohSupports.delete(id)
+      await dataClient.db.oohSupports.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
     } catch (error) {

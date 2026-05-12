@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { 
   Table, 
   TableBody, 
@@ -67,8 +67,8 @@ export default function Documents() {
     setLoading(true)
     try {
       const [docList, empList] = await Promise.all([
-        localData.db.documents.list(),
-        localData.db.employees.list()
+        dataClient.db.documents.list(),
+        dataClient.db.employees.list()
       ])
       setDocuments(docList as Document[])
       setEmployees(empList as Employee[])
@@ -91,10 +91,10 @@ export default function Documents() {
       // 1. Upload to storage
       const file = formData.file
       const path = `documents/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-      const { publicUrl } = await localData.storage.upload(file, path)
+      const { publicUrl } = await dataClient.storage.upload(file, path)
 
       // 2. Save metadata to DB
-      await localData.db.documents.create({
+      await dataClient.db.documents.create({
         name: formData.name,
         employeeId: formData.employeeId,
         type: formData.type,
@@ -118,7 +118,7 @@ export default function Documents() {
     try {
       // Extract path from URL to remove from storage (optional but cleaner)
       // For now just delete record for simplicity as storage removal requires exact path
-      await localData.db.documents.delete(id)
+      await dataClient.db.documents.delete(id)
       toast.success('Document supprimé')
       fetchData()
     } catch (error) {
@@ -236,7 +236,7 @@ export default function Documents() {
       </div>
 
       <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-        <Table>
+        <Table data-tour="documents-table">
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead>Document</TableHead>

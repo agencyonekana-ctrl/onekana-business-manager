@@ -18,7 +18,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { localData } from '@/lib/local-data'
+import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Asset } from '../types'
 
@@ -43,10 +43,10 @@ export function AssetsTab({ assets, loading, onRefresh }: AssetsTabProps) {
     e.preventDefault()
     try {
       if (editingAsset) {
-        await localData.db.oohAssets.update(editingAsset.id, form)
+        await dataClient.db.oohAssets.update(editingAsset.id, form)
         toast.success('Asset mis à jour')
       } else {
-        await localData.db.oohAssets.create(form)
+        await dataClient.db.oohAssets.create(form)
         toast.success('Asset ajouté')
       }
       setIsDialogOpen(false)
@@ -61,7 +61,7 @@ export function AssetsTab({ assets, loading, onRefresh }: AssetsTabProps) {
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet élément ?')) return
     try {
-      await localData.db.oohAssets.delete(id)
+      await dataClient.db.oohAssets.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
     } catch (error) {

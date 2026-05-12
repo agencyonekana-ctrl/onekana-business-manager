@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { 
   Table, 
   TableBody, 
@@ -32,6 +32,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from 'react-hot-toast'
 import { format, addDays, startOfToday, isWithinInterval, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { PageHeader } from '../components/app/PageHeader'
 
 interface Campaign {
   id: string
@@ -103,12 +104,12 @@ export default function Campaigns() {
     setLoading(true)
     try {
       const [cList, eList, supList, pList, aList, lList] = await Promise.all([
-        localData.db.oohCampaigns.list(),
-        localData.db.oohEmplacements.list(),
-        localData.db.oohSupports.list(),
-        localData.db.oohPricingRules.list(),
-        localData.db.oohAssets.list(),
-        localData.db.oohCampaignLines.list()
+        dataClient.db.oohCampaigns.list(),
+        dataClient.db.oohEmplacements.list(),
+        dataClient.db.oohSupports.list(),
+        dataClient.db.oohPricingRules.list(),
+        dataClient.db.oohAssets.list(),
+        dataClient.db.oohCampaignLines.list()
       ])
       setCampaigns(cList as Campaign[])
       setAllCampaigns(cList as Campaign[])
@@ -126,7 +127,7 @@ export default function Campaigns() {
 
   async function fetchLines(campaignId: string) {
     try {
-      const lines = await localData.db.oohCampaignLines.list({ where: { campaignId } })
+      const lines = await dataClient.db.oohCampaignLines.list({ where: { campaignId } })
       setCampaignLines(lines as CampaignLine[])
     } catch (error) {
       toast.error('Erreur lors du chargement des lignes')
@@ -136,7 +137,7 @@ export default function Campaigns() {
   async function handleCampaignSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
-      await localData.db.oohCampaigns.create(campaignForm)
+      await dataClient.db.oohCampaigns.create(campaignForm)
       toast.success('Campagne créée')
       setIsCampaignDialogOpen(false)
       setCampaignForm({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
@@ -152,12 +153,12 @@ export default function Campaigns() {
     
     try {
       // Check for overlap
-      const existingLines = await localData.db.oohCampaignLines.list({
+      const existingLines = await dataClient.db.oohCampaignLines.list({
         where: { emplacementId: lineForm.emplacementId }
       })
       
       const campaignsLinked = await Promise.all(
-        (existingLines as CampaignLine[]).map(l => localData.db.oohCampaigns.get(l.campaignId))
+        (existingLines as CampaignLine[]).map(l => dataClient.db.oohCampaigns.get(l.campaignId))
       )
       
       const overlap = campaignsLinked.some((c: any) => {
@@ -173,7 +174,7 @@ export default function Campaigns() {
         return
       }
 
-      await localData.db.oohCampaignLines.create({
+      await dataClient.db.oohCampaignLines.create({
         ...lineForm,
         campaignId: selectedCampaign.id,
         assetId: lineForm.assetId || null
@@ -210,8 +211,13 @@ export default function Campaigns() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
+      <PageHeader
+        eyebrow="Ventes OOH"
+        title="Campagnes"
+        description="Préparez les campagnes clients, réservez les emplacements et vérifiez l’occupation sur la timeline."
+        action={
+        <>
+        <div className="hidden">
           <h2 className="text-3xl font-bold tracking-tight">Campagnes & Réservations</h2>
           <p className="text-muted-foreground">Gérez les réservations d'emplacements et les lignes de vente par campagne.</p>
         </div>
@@ -244,9 +250,11 @@ export default function Campaigns() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        </>
+        }
+      />
 
-      <Tabs defaultValue="list" className="w-full">
+      <Tabs defaultValue="list" className="w-full" data-tour="campaigns-workspace">
         <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
           <TabsTrigger value="list" className="gap-2"><List className="w-4 h-4" /> Liste des Campagnes</TabsTrigger>
           <TabsTrigger value="timeline" className="gap-2"><CalendarIcon className="w-4 h-4" /> Vue Timeline</TabsTrigger>
@@ -367,7 +375,7 @@ export default function Campaigns() {
                                 size="icon" 
                                 className="text-destructive" 
                                 onClick={async () => { 
-                                  await localData.db.oohCampaignLines.delete(line.id); 
+                                  await dataClient.db.oohCampaignLines.delete(line.id); 
                                   fetchLines(selectedCampaign.id); 
                                 }}
                               >

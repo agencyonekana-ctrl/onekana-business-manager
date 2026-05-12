@@ -26,7 +26,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select'
-import { localData } from '@/lib/local-data'
+import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Site, Support, Emplacement } from '../types'
 
@@ -66,10 +66,10 @@ export function EmplacementsTab({
     e.preventDefault()
     try {
       if (editingEmplacement) {
-        await localData.db.oohEmplacements.update(editingEmplacement.id, form)
+        await dataClient.db.oohEmplacements.update(editingEmplacement.id, form)
         toast.success('Emplacement mis à jour')
       } else {
-        await localData.db.oohEmplacements.create(form)
+        await dataClient.db.oohEmplacements.create(form)
         toast.success('Emplacement ajouté')
       }
       setIsDialogOpen(false)
@@ -84,7 +84,7 @@ export function EmplacementsTab({
   async function handleDelete(id: string) {
     if (!confirm('Voulez-vous vraiment supprimer cet élément ?')) return
     try {
-      await localData.db.oohEmplacements.delete(id)
+      await dataClient.db.oohEmplacements.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
     } catch (error) {

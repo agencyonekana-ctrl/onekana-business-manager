@@ -15,6 +15,8 @@ import Reservations from './pages/Reservations'
 import Documents from './pages/Documents'
 import Schedules from './pages/Schedules'
 import Settings from './pages/Settings'
+import PacksCommerciaux from './pages/PacksCommerciaux'
+import ContactMessages from './pages/ContactMessages'
 
 function App() {
   return (
@@ -30,6 +32,9 @@ function App() {
           <Route path="/reservations" element={<Reservations />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/schedules" element={<Schedules />} />
+          <Route path="/packs" element={<PacksCommerciaux />} />
+          <Route path="/demandes" element={<ContactMessages />} />
+          <Route path="/contact-messages" element={<Navigate to="/demandes" replace />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -44,4 +49,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>
 )
-

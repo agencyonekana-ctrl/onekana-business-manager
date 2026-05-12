@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { localData } from '../lib/local-data'
+import { dataClient } from '../lib/data-client'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { 
@@ -58,8 +58,8 @@ export default function Schedules() {
   async function fetchData() {
     try {
       const [schList, empList] = await Promise.all([
-        localData.db.schedules.list(),
-        localData.db.employees.list()
+        dataClient.db.schedules.list(),
+        dataClient.db.employees.list()
       ])
       setSchedules(schList as Schedule[])
       setEmployees(empList as Employee[])
@@ -71,7 +71,7 @@ export default function Schedules() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
-      await localData.db.schedules.create(formData)
+      await dataClient.db.schedules.create(formData)
       toast.success('Horaire ajouté')
       setIsAddOpen(false)
       fetchData()
