@@ -6,6 +6,7 @@ import {
   Calendar,
   ChevronRight,
   FileText,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -13,12 +14,17 @@ import {
   Megaphone,
   Package,
   PackageCheck,
+  ReceiptText,
   Settings,
   Users,
+  Wallet,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { OnboardingGuide } from '../app/OnboardingGuide'
+import { RightSideBar } from '../app/RightSideBar'
+import { hasAccess } from '../../lib/access-control'
+import type { AccessRequirement } from '../../lib/access-control'
 import {
   Sidebar,
   SidebarContent,
@@ -31,45 +37,66 @@ import {
   SidebarTrigger,
 } from '../ui/sidebar'
 
-const menuGroups = [
+type MenuItem = AccessRequirement & {
+  icon: React.ElementType
+  label: string
+  path: string
+}
+
+type MenuGroup = {
+  label: string
+  items: MenuItem[]
+}
+
+const menuGroups: MenuGroup[] = [
   {
     label: 'Accueil',
     items: [
-      { icon: LayoutDashboard, label: 'Tableau de bord', path: '/' },
+      { icon: LayoutDashboard, label: 'Tableau de bord', path: '/', moduleKey: 'dashboard', permission: 'dashboard.view' },
     ],
   },
   {
     label: 'Ventes OOH',
     items: [
-      { icon: Mail, label: 'Demandes clients', path: '/demandes' },
-      { icon: PackageCheck, label: 'Packs commerciaux', path: '/packs' },
-      { icon: Megaphone, label: 'Campagnes', path: '/campaigns' },
-      { icon: MapPin, label: 'Inventaire publicitaire', path: '/inventory' },
+      { icon: Mail, label: 'Demandes clients', path: '/demandes', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: PackageCheck, label: 'Packs commerciaux', path: '/packs', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: Megaphone, label: 'Campagnes', path: '/campaigns', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: MapPin, label: 'Inventaire publicitaire', path: '/inventory', moduleKey: 'inventory', permission: 'inventory.view' },
     ],
   },
   {
     label: 'Gestion interne',
     items: [
-      { icon: Users, label: 'Equipe', path: '/employees' },
-      { icon: Package, label: 'Materiels', path: '/materials' },
-      { icon: FileText, label: 'Documents', path: '/documents' },
-      { icon: Calendar, label: 'Horaires', path: '/schedules' },
+      { icon: Users, label: 'Equipe', path: '/employees', moduleKey: 'team', permission: 'team.view' },
+      { icon: Package, label: 'Materiels', path: '/materials', moduleKey: 'operations', permission: 'operations.view' },
+      { icon: FileText, label: 'Documents', path: '/documents', moduleKey: 'operations', permission: 'operations.view' },
+      { icon: Calendar, label: 'Horaires', path: '/schedules', moduleKey: 'operations', permission: 'operations.view' },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { icon: Landmark, label: 'Comptabilité OHADA', path: '/accounting', moduleKey: 'finance', permission: 'finance.view' },
+      { icon: Wallet, label: 'Onekana Wallet', path: '/wallet', moduleKey: 'finance', permission: 'finance.view' },
+      { icon: ReceiptText, label: 'Factures & Paiements', path: '/invoices', moduleKey: 'finance', permission: 'finance.view' },
     ],
   },
   {
     label: 'Administration',
     items: [
-      { icon: Building2, label: 'Departements', path: '/departments' },
-      { icon: BookMarked, label: 'Reservations agences', path: '/reservations' },
-      { icon: Settings, label: 'Parametres', path: '/settings' },
+      { icon: Building2, label: 'Departements', path: '/departments', moduleKey: 'administration', permission: 'administration.view' },
+      { icon: BookMarked, label: 'Reservations agences', path: '/reservations', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: Settings, label: 'Parametres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
     ],
   },
 ]
 
-const menuItems = menuGroups.flatMap((group) => group.items)
-
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
+  const visibleGroups = menuGroups
+    .map((group) => ({ ...group, items: group.items.filter((item) => hasAccess(user, item)) }))
+    .filter((group) => group.items.length > 0)
+  const visibleItems = visibleGroups.flatMap((group) => group.items)
 
   return (
     <SidebarProvider>
@@ -87,7 +114,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </div>
           </SidebarHeader>
           <SidebarContent className="p-2">
-            {menuGroups.map((group) => (
+            {visibleGroups.map((group) => (
               <div key={group.label} className="mb-4">
                 <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-wide text-[#ffd026]">
                   {group.label}
@@ -126,7 +153,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium text-white">{user.displayName}</span>
-                <span className="truncate text-xs text-white/55">{user.email}</span>
+                <span className="truncate text-xs text-white/55">{user.tenant?.name || user.email}</span>
               </div>
             </div>
             <Button
@@ -144,17 +171,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <h1 className="text-lg font-black uppercase tracking-wide">
-                {menuItems.find((item) => item.path === window.location.pathname)?.label || 'Dashboard'}
+                {visibleItems.find((item) => item.path === window.location.pathname)?.label || 'Dashboard'}
               </h1>
             </div>
             <div className="hidden items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-bold uppercase text-primary sm:flex">
-              ONEKANA interne
+              {user.tenant?.name || 'ONEKANA'} interne
             </div>
           </header>
           <main className="flex-1 overflow-y-auto p-6">
             <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
           </main>
         </SidebarInset>
+        <RightSideBar />
         <OnboardingGuide />
       </div>
     </SidebarProvider>

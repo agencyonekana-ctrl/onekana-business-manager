@@ -17,25 +17,43 @@ import Schedules from './pages/Schedules'
 import Settings from './pages/Settings'
 import PacksCommerciaux from './pages/PacksCommerciaux'
 import ContactMessages from './pages/ContactMessages'
+import Accounting from './pages/Accounting'
+import ChartOfAccounts from './pages/ChartOfAccounts'
+import AccountingJournals from './pages/AccountingJournals'
+import AccountingEntries from './pages/AccountingEntries'
+import Wallet from './pages/Wallet'
+import Invoices from './pages/Invoices'
+import { ProtectedRoute } from './components/app/ProtectedRoute'
+import type { ModuleKey, Permission } from './types/auth'
+
+function protect(element: React.ReactNode, moduleKey: ModuleKey, permission: Permission) {
+  return <ProtectedRoute moduleKey={moduleKey} permission={permission}>{element}</ProtectedRoute>
+}
 
 function App() {
   return (
     <BrowserRouter>
       <DashboardLayout>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/employees" element={<Employees />} />
-          <Route path="/departments" element={<Departments />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/materials" element={<Materials />} />
-          <Route path="/reservations" element={<Reservations />} />
-          <Route path="/documents" element={<Documents />} />
-          <Route path="/schedules" element={<Schedules />} />
-          <Route path="/packs" element={<PacksCommerciaux />} />
-          <Route path="/demandes" element={<ContactMessages />} />
+          <Route path="/" element={protect(<Dashboard />, 'dashboard', 'dashboard.view')} />
+          <Route path="/employees" element={protect(<Employees />, 'team', 'team.view')} />
+          <Route path="/departments" element={protect(<Departments />, 'administration', 'administration.view')} />
+          <Route path="/campaigns" element={protect(<Campaigns />, 'sales', 'sales.view')} />
+          <Route path="/inventory" element={protect(<Inventory />, 'inventory', 'inventory.view')} />
+          <Route path="/materials" element={protect(<Materials />, 'operations', 'operations.view')} />
+          <Route path="/reservations" element={protect(<Reservations />, 'sales', 'sales.view')} />
+          <Route path="/documents" element={protect(<Documents />, 'operations', 'operations.view')} />
+          <Route path="/schedules" element={protect(<Schedules />, 'operations', 'operations.view')} />
+          <Route path="/packs" element={protect(<PacksCommerciaux />, 'sales', 'sales.view')} />
+          <Route path="/demandes" element={protect(<ContactMessages />, 'sales', 'sales.view')} />
           <Route path="/contact-messages" element={<Navigate to="/demandes" replace />} />
-          <Route path="/settings" element={<Settings />} />
+          <Route path="/accounting" element={protect(<Accounting />, 'finance', 'finance.view')} />
+          <Route path="/accounting/chart-of-accounts" element={protect(<ChartOfAccounts />, 'finance', 'finance.view')} />
+          <Route path="/accounting/journals" element={protect(<AccountingJournals />, 'finance', 'finance.view')} />
+          <Route path="/accounting/entries" element={protect(<AccountingEntries />, 'finance', 'finance.view')} />
+          <Route path="/wallet" element={protect(<Wallet />, 'finance', 'finance.view')} />
+          <Route path="/invoices" element={protect(<Invoices />, 'finance', 'finance.view')} />
+          <Route path="/settings" element={protect(<Settings />, 'settings', 'settings.manage')} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </DashboardLayout>

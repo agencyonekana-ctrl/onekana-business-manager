@@ -42,8 +42,22 @@ export const API_ENDPOINTS = {
   routeCoordinates: endpoint('/route-coordinates'),
   agendaEvents: endpoint('/agenda-events'),
   notifications: endpoint('/notifications'),
+  roadmap: endpoint('/roadmap'),
+
+  accountingAccounts: endpoint('/accounting/accounts'),
+  accountingJournals: endpoint('/accounting/journals'),
+  accountingEntries: endpoint('/accounting/entries'),
+  trialBalance: endpoint('/accounting/trial-balance'),
+  walletAccounts: endpoint('/wallet/accounts'),
+  walletTransactions: endpoint('/wallet/transactions'),
+  invoices: endpoint('/invoices'),
+  payments: endpoint('/payments'),
 }
 
 export function resourceEndpoint(resourceUrl: string, id?: string | number) {
   return id ? `${resourceUrl}/${id}` : resourceUrl
+}
+
+export function resourceActionEndpoint(resourceUrl: string, id: string | number, action: string) {
+  return `${resourceEndpoint(resourceUrl, id)}/${action}`
 }

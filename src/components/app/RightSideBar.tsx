@@ -1,0 +1,205 @@
+import { useEffect, useState } from 'react'
+import { Bell, CheckCircle2, ChevronRight, Maximize2, Minus, Send, ShieldCheck, Sparkles, X, Zap } from 'lucide-react'
+import { dataClient } from '../../lib/data-client'
+import { remoteApi } from '../../services/remote-api'
+import { Button } from '../ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+
+type AppNotification = {
+  id: string
+  title?: string
+  message?: string
+  body?: string
+  readAt?: string | null
+  read_at?: string | null
+  createdAt?: string
+  created_at?: string
+}
+
+type RoadmapItem = {
+  id: string
+  title?: string
+  description?: string
+  status?: string
+  priority?: string
+  targetDate?: string
+  target_date?: string
+}
+
+export function RightSideBar() {
+  const [open, setOpen] = useState(false)
+  const [minimized, setMinimized] = useState(false)
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
+  const [roadmap, setRoadmap] = useState<RoadmapItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    fetchPanelData()
+  }, [open])
+
+  async function fetchPanelData() {
+    setLoading(true)
+    try {
+      const [notificationRows, roadmapRows] = await Promise.all([
+        dataClient.db.notifications.list<AppNotification>({ orderBy: { createdAt: 'desc' } }),
+        dataClient.db.roadmap.list<RoadmapItem>({ orderBy: { targetDate: 'asc' } }),
+      ])
+      setNotifications(notificationRows)
+      setRoadmap(roadmapRows)
+      setError(false)
+    } catch {
+      setError(true)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function markAsRead(notification: AppNotification) {
+    try {
+      await remoteApi.notifications.markRead(notification.id)
+      fetchPanelData()
+    } catch {
+      setError(true)
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setOpen(true)
+          setMinimized(false)
+        }}
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-[1.4rem] bg-[#101010] px-4 py-3 text-left text-white shadow-2xl"
+        aria-label="Ouvrir les notifications ONEKANA"
+      >
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#c5a24a] text-white">
+          <Zap className="h-5 w-5" />
+        </span>
+        <span className="hidden min-w-44 sm:block">
+          <span className="block text-sm font-black uppercase leading-none">ONEKANA <span className="text-[10px] text-[#d5b562]">AI</span></span>
+          <span className="mt-1 flex items-center gap-1 text-xs text-white/65">
+            <ShieldCheck className="h-3 w-3 text-[#d5b562]" />
+            Système intelligent actif
+          </span>
+        </span>
+        <Maximize2 className="h-4 w-4 text-white/55" />
+      </button>
+    )
+  }
+
+  return (
+    <aside className={`fixed bottom-5 right-5 z-50 overflow-hidden rounded-[1.6rem] bg-white shadow-2xl transition-all ${
+      minimized ? 'h-[76px] w-[min(420px,calc(100vw-2rem))]' : 'h-[min(720px,calc(100vh-2.5rem))] w-[min(420px,calc(100vw-2rem))]'
+    }`}>
+      <div className="flex items-center justify-between bg-[#101010] px-5 py-4 text-white">
+        <div className="flex items-center gap-3">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c5a24a]">
+            <Zap className="h-5 w-5" />
+          </span>
+          <div>
+            <div className="text-sm font-black uppercase leading-none">ONEKANA <span className="text-[10px] text-[#d5b562]">AI</span></div>
+            <div className="mt-1 flex items-center gap-1 text-xs text-white/65">
+              <ShieldCheck className="h-3 w-3 text-[#d5b562]" />
+              Système intelligent actif
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-white/10 text-white hover:bg-white/15 hover:text-white" onClick={() => setMinimized((value) => !value)}>
+            <Minus className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-white/10 text-white hover:bg-white/15 hover:text-white" onClick={() => setOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {!minimized && (
+        <div className="flex h-[calc(100%-80px)] flex-col">
+          <div className="flex-1 overflow-y-auto p-5">
+            <div className="mb-5 text-center">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#c5a24a]/10 text-[#c5a24a]">
+                <Sparkles className="h-9 w-9" />
+              </div>
+              <h2 className="text-2xl font-black">Bonjour</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Notifications et roadmap de gestion ONEKANA.</p>
+            </div>
+
+            <Tabs defaultValue="notifications">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="notifications" className="mt-4 space-y-3">
+                {loading ? <PanelState text="Chargement..." /> :
+                  error ? <PanelState text="API notifications indisponible." /> :
+                  notifications.length === 0 ? <PanelState text="Aucune notification pour le moment." /> :
+                  notifications.map((notification) => {
+                    const read = Boolean(notification.readAt || notification.read_at)
+                    return (
+                      <div key={notification.id} className="rounded-2xl border border-border bg-white p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-bold">{notification.title || 'Notification'}</div>
+                            <p className="mt-1 text-sm text-muted-foreground">{notification.message || notification.body || 'Sans message'}</p>
+                          </div>
+                          {!read && <span className="h-2 w-2 rounded-full bg-primary" />}
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{notification.createdAt || notification.created_at || 'Date non fournie'}</span>
+                          {!read && <button className="font-bold text-primary" onClick={() => markAsRead(notification)}>Marquer lu</button>}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </TabsContent>
+
+              <TabsContent value="roadmap" className="mt-4 space-y-3">
+                {loading ? <PanelState text="Chargement..." /> :
+                  error ? <PanelState text="API roadmap indisponible." /> :
+                  roadmap.length === 0 ? <PanelState text="Aucun élément roadmap pour le moment." /> :
+                  roadmap.map((item) => (
+                    <div key={item.id} className="rounded-2xl border border-border bg-white p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold">{item.title || 'Roadmap'}</div>
+                          <p className="mt-1 text-sm text-muted-foreground">{item.description || 'Sans description'}</p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <span className="rounded-full bg-[#c5a24a]/10 px-2 py-1 font-bold text-[#8a6a1d]">{item.status || 'planned'}</span>
+                        <span className="rounded-full bg-primary/10 px-2 py-1 font-bold text-primary">{item.priority || 'normal'}</span>
+                        {(item.targetDate || item.target_date) && <span className="rounded-full bg-muted px-2 py-1">{item.targetDate || item.target_date}</span>}
+                      </div>
+                    </div>
+                  ))}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          <div className="border-t border-border bg-white p-4">
+            <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
+              <Bell className="h-4 w-4" />
+              Notifications et roadmap via API
+              <Send className="ml-auto h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </div>
+      )}
+    </aside>
+  )
+}
+
+function PanelState({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+      {text}
+    </div>
+  )
+}

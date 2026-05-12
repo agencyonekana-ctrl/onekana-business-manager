@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_ENDPOINTS, resourceEndpoint } from '../config/api'
+import { API_BASE_URL, API_ENDPOINTS, resourceActionEndpoint, resourceEndpoint } from '../config/api'
 import { apiFetch, unwrapApiData } from './api-client'
 
 function resource(url: string) {
@@ -52,5 +52,18 @@ export const remoteApi = {
   transportRoutes: resource(API_ENDPOINTS.transportRoutes),
   routeCoordinates: resource(API_ENDPOINTS.routeCoordinates),
   agendaEvents: resource(API_ENDPOINTS.agendaEvents),
-  notifications: resource(API_ENDPOINTS.notifications),
+  notifications: {
+    ...resource(API_ENDPOINTS.notifications),
+    markRead: (id: string) => apiFetch(resourceActionEndpoint(API_ENDPOINTS.notifications, id, 'read'), { method: 'PUT' }),
+  },
+  roadmap: resource(API_ENDPOINTS.roadmap),
+
+  accountingAccounts: resource(API_ENDPOINTS.accountingAccounts),
+  accountingJournals: resource(API_ENDPOINTS.accountingJournals),
+  accountingEntries: resource(API_ENDPOINTS.accountingEntries),
+  trialBalance: resource(API_ENDPOINTS.trialBalance),
+  walletAccounts: resource(API_ENDPOINTS.walletAccounts),
+  walletTransactions: resource(API_ENDPOINTS.walletTransactions),
+  invoices: resource(API_ENDPOINTS.invoices),
+  payments: resource(API_ENDPOINTS.payments),
 }
