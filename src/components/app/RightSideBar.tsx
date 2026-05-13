@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Bell, CheckCircle2, ChevronRight, Maximize2, Minus, Send, ShieldCheck, Sparkles, X, Zap } from 'lucide-react'
+import { Bell, ChevronRight, Maximize2, Minus, Send, ShieldCheck, Sparkles, X, Zap } from 'lucide-react'
 import { dataClient } from '../../lib/data-client'
 import { remoteApi } from '../../services/remote-api'
 import { Button } from '../ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
+import { StatusBadge } from './StatusBadge'
 
 type AppNotification = {
   id: string
@@ -73,17 +74,17 @@ export function RightSideBar() {
           setOpen(true)
           setMinimized(false)
         }}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-[1.4rem] bg-[#101010] px-4 py-3 text-left text-white shadow-2xl"
+        className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-[1.4rem] bg-[#111111] px-4 py-3 text-left text-white shadow-xl ring-1 ring-white/10"
         aria-label="Ouvrir les notifications ONEKANA"
       >
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#c5a24a] text-white">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/90 text-white">
           <Zap className="h-5 w-5" />
         </span>
         <span className="hidden min-w-44 sm:block">
-          <span className="block text-sm font-black uppercase leading-none">ONEKANA <span className="text-[10px] text-[#d5b562]">AI</span></span>
+          <span className="block text-sm font-black uppercase leading-none">ONEKANA</span>
           <span className="mt-1 flex items-center gap-1 text-xs text-white/65">
-            <ShieldCheck className="h-3 w-3 text-[#d5b562]" />
-            Système intelligent actif
+            <ShieldCheck className="h-3 w-3 text-primary" />
+            Notifications & roadmap
           </span>
         </span>
         <Maximize2 className="h-4 w-4 text-white/55" />
@@ -92,19 +93,19 @@ export function RightSideBar() {
   }
 
   return (
-    <aside className={`fixed bottom-5 right-5 z-50 overflow-hidden rounded-[1.6rem] bg-white shadow-2xl transition-all ${
+    <aside className={`fixed bottom-5 right-5 z-50 overflow-hidden rounded-[1.6rem] border border-black/10 bg-white shadow-2xl transition-all ${
       minimized ? 'h-[76px] w-[min(420px,calc(100vw-2rem))]' : 'h-[min(720px,calc(100vh-2.5rem))] w-[min(420px,calc(100vw-2rem))]'
     }`}>
-      <div className="flex items-center justify-between bg-[#101010] px-5 py-4 text-white">
+      <div className="flex items-center justify-between bg-[#111111] px-5 py-4 text-white">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c5a24a]">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/90">
             <Zap className="h-5 w-5" />
           </span>
           <div>
-            <div className="text-sm font-black uppercase leading-none">ONEKANA <span className="text-[10px] text-[#d5b562]">AI</span></div>
+            <div className="text-sm font-black uppercase leading-none">ONEKANA</div>
             <div className="mt-1 flex items-center gap-1 text-xs text-white/65">
-              <ShieldCheck className="h-3 w-3 text-[#d5b562]" />
-              Système intelligent actif
+              <ShieldCheck className="h-3 w-3 text-primary" />
+              Notifications & roadmap
             </div>
           </div>
         </div>
@@ -122,7 +123,7 @@ export function RightSideBar() {
         <div className="flex h-[calc(100%-80px)] flex-col">
           <div className="flex-1 overflow-y-auto p-5">
             <div className="mb-5 text-center">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#c5a24a]/10 text-[#c5a24a]">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/5 text-primary ring-1 ring-primary/10">
                 <Sparkles className="h-9 w-9" />
               </div>
               <h2 className="text-2xl font-black">Bonjour</h2>
@@ -130,7 +131,7 @@ export function RightSideBar() {
             </div>
 
             <Tabs defaultValue="notifications">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-2 rounded-xl">
                 <TabsTrigger value="notifications">Notifications</TabsTrigger>
                 <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
               </TabsList>
@@ -142,7 +143,7 @@ export function RightSideBar() {
                   notifications.map((notification) => {
                     const read = Boolean(notification.readAt || notification.read_at)
                     return (
-                      <div key={notification.id} className="rounded-2xl border border-border bg-white p-4">
+                      <div key={notification.id} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="font-bold">{notification.title || 'Notification'}</div>
@@ -164,7 +165,7 @@ export function RightSideBar() {
                   error ? <PanelState text="API roadmap indisponible." /> :
                   roadmap.length === 0 ? <PanelState text="Aucun élément roadmap pour le moment." /> :
                   roadmap.map((item) => (
-                    <div key={item.id} className="rounded-2xl border border-border bg-white p-4">
+                    <div key={item.id} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="font-bold">{item.title || 'Roadmap'}</div>
@@ -172,10 +173,10 @@ export function RightSideBar() {
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </div>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        <span className="rounded-full bg-[#c5a24a]/10 px-2 py-1 font-bold text-[#8a6a1d]">{item.status || 'planned'}</span>
-                        <span className="rounded-full bg-primary/10 px-2 py-1 font-bold text-primary">{item.priority || 'normal'}</span>
-                        {(item.targetDate || item.target_date) && <span className="rounded-full bg-muted px-2 py-1">{item.targetDate || item.target_date}</span>}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <StatusBadge tone="red">{item.status || 'planned'}</StatusBadge>
+                        <StatusBadge>{item.priority || 'normal'}</StatusBadge>
+                        {(item.targetDate || item.target_date) && <StatusBadge>{item.targetDate || item.target_date}</StatusBadge>}
                       </div>
                     </div>
                   ))}

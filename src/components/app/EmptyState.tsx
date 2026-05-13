@@ -10,10 +10,12 @@ type EmptyStateProps = {
 
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-primary/20 bg-primary/5 px-6 py-8 text-center">
-      <CircleHelp className="mb-3 h-8 w-8 text-primary" />
-      <h3 className="text-base font-black uppercase">{title}</h3>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
+    <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-white px-6 py-9 text-center shadow-sm">
+      <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary ring-1 ring-primary/10">
+        <CircleHelp className="h-6 w-6" />
+      </span>
+      <h3 className="text-sm font-black uppercase tracking-wide">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{description}</p>
       {action && <div className="mt-4">{action}</div>}
     </div>
   )

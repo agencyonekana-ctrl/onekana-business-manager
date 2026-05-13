@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAuth } from '../../hooks/use-auth'
+import { NavLink } from 'react-router-dom'
 import {
   BookMarked,
   Building2,
@@ -19,12 +19,13 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
-import { Button } from '../ui/button'
-import { OnboardingGuide } from '../app/OnboardingGuide'
-import { RightSideBar } from '../app/RightSideBar'
+import { useAuth } from '../../hooks/use-auth'
 import { hasAccess } from '../../lib/access-control'
 import type { AccessRequirement } from '../../lib/access-control'
+import { Button } from '../ui/button'
+import { DataSourceBadge } from '../app/DataSourceBadge'
+import { OnboardingGuide } from '../app/OnboardingGuide'
+import { RightSideBar } from '../app/RightSideBar'
 import {
   Sidebar,
   SidebarContent,
@@ -67,8 +68,8 @@ const menuGroups: MenuGroup[] = [
   {
     label: 'Gestion interne',
     items: [
-      { icon: Users, label: 'Equipe', path: '/employees', moduleKey: 'team', permission: 'team.view' },
-      { icon: Package, label: 'Materiels', path: '/materials', moduleKey: 'operations', permission: 'operations.view' },
+      { icon: Users, label: 'Équipe', path: '/employees', moduleKey: 'team', permission: 'team.view' },
+      { icon: Package, label: 'Matériels', path: '/materials', moduleKey: 'operations', permission: 'operations.view' },
       { icon: FileText, label: 'Documents', path: '/documents', moduleKey: 'operations', permission: 'operations.view' },
       { icon: Calendar, label: 'Horaires', path: '/schedules', moduleKey: 'operations', permission: 'operations.view' },
     ],
@@ -84,9 +85,9 @@ const menuGroups: MenuGroup[] = [
   {
     label: 'Administration',
     items: [
-      { icon: Building2, label: 'Departements', path: '/departments', moduleKey: 'administration', permission: 'administration.view' },
-      { icon: BookMarked, label: 'Reservations agences', path: '/reservations', moduleKey: 'sales', permission: 'sales.view' },
-      { icon: Settings, label: 'Parametres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
+      { icon: Building2, label: 'Départements', path: '/departments', moduleKey: 'administration', permission: 'administration.view' },
+      { icon: BookMarked, label: 'Réservations agences', path: '/reservations', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: Settings, label: 'Paramètres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
     ],
   },
 ]
@@ -101,22 +102,22 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full bg-background">
-        <Sidebar className="border-r border-white/10 bg-[#111111] text-white">
+        <Sidebar className="border-r border-white/10 bg-[#151313] text-white shadow-2xl">
           <SidebarHeader className="border-b border-white/10 p-4">
-            <div className="flex items-center gap-3">
-              <img src="/logo-1.png" alt="ONEKANA" className="h-10 w-auto shrink-0" />
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3">
+              <div className="flex h-14 w-full items-center rounded-2xl border border-white/10 bg-white px-3 py-2 shadow-sm">
+                <img src="/logo%20onekana.png" alt="ONEKANA" className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0 px-1">
                 <span className="block text-sm font-black uppercase tracking-wide text-white">Back Office</span>
-                <span className="block text-[11px] font-semibold uppercase text-[#ffd026]">
-                  Regie & operations
-                </span>
+                <span className="block text-[11px] font-semibold uppercase text-primary">Régie & opérations</span>
               </div>
             </div>
           </SidebarHeader>
           <SidebarContent className="p-2">
             {visibleGroups.map((group) => (
               <div key={group.label} className="mb-4">
-                <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-wide text-[#ffd026]">
+                <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-wide text-white/50">
                   {group.label}
                 </div>
                 <SidebarMenu>
@@ -126,17 +127,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                         <NavLink
                           to={item.path}
                           className={({ isActive }) =>
-                            `flex items-center gap-3 rounded-lg px-3 py-2 transition-colors ${
+                            `relative flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all ${
                               isActive
-                                ? 'bg-[#e31317] text-white'
-                                : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                ? 'border-white/10 bg-white/[0.08] text-white shadow-sm'
+                                : 'border-transparent text-white/78 hover:border-white/10 hover:bg-white/[0.06] hover:text-white'
                             }`
                           }
                         >
-                          <item.icon className="h-5 w-5" />
-                          <span className="font-medium">{item.label}</span>
                           {window.location.pathname === item.path && (
-                            <ChevronRight className="ml-auto h-4 w-4 opacity-50" />
+                            <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" />
+                          )}
+                          <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                            window.location.pathname === item.path ? 'bg-primary/15 text-primary' : 'bg-white/[0.07] text-white/78'
+                          }`}>
+                            <item.icon className="h-4 w-4" />
+                          </span>
+                          <span className="font-semibold">{item.label}</span>
+                          {window.location.pathname === item.path && (
+                            <ChevronRight className="ml-auto h-4 w-4 text-primary" />
                           )}
                         </NavLink>
                       </SidebarMenuButton>
@@ -147,39 +155,42 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             ))}
           </SidebarContent>
           <div className="mt-auto space-y-4 border-t border-white/10 p-4">
-            <div className="flex items-center gap-3 px-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#ffd026] font-black text-[#111111]">
+            <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary font-black text-white shadow-lg shadow-primary/15">
                 {user.displayName[0] || 'U'}
               </div>
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-medium text-white">{user.displayName}</span>
-                <span className="truncate text-xs text-white/55">{user.tenant?.name || user.email}</span>
+                <span className="truncate text-xs text-white/65">{user.tenant?.name || user.email}</span>
               </div>
             </div>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 text-white/70 hover:bg-white/10 hover:text-white"
+              className="w-full justify-start gap-3 rounded-xl text-white/78 hover:bg-white/[0.06] hover:text-white"
               onClick={() => logout()}
             >
               <LogOut className="h-5 w-5" />
-              <span>Deconnexion</span>
+              <span>Déconnexion</span>
             </Button>
           </div>
         </Sidebar>
         <SidebarInset className="flex flex-1 flex-col overflow-hidden">
-          <header className="z-10 flex h-16 items-center justify-between border-b border-border bg-white/85 px-6 backdrop-blur-sm">
+          <header className="z-10 flex h-16 items-center justify-between border-b border-border bg-white/90 px-6 shadow-sm backdrop-blur-sm">
             <div className="flex items-center gap-4">
               <SidebarTrigger />
-              <h1 className="text-lg font-black uppercase tracking-wide">
+              <h1 className="text-base font-black uppercase tracking-wide">
                 {visibleItems.find((item) => item.path === window.location.pathname)?.label || 'Dashboard'}
               </h1>
             </div>
-            <div className="hidden items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-bold uppercase text-primary sm:flex">
-              {user.tenant?.name || 'ONEKANA'} interne
+            <div className="hidden items-center gap-3 sm:flex">
+              <DataSourceBadge />
+              <div className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-bold uppercase text-primary">
+                {user.tenant?.name || 'ONEKANA'} interne
+              </div>
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
+          <main className="flex-1 overflow-y-auto bg-[#f7f7f7] p-5 sm:p-6">
+            <div className="mx-auto max-w-7xl animate-fade-in pb-20">{children}</div>
           </main>
         </SidebarInset>
         <RightSideBar />

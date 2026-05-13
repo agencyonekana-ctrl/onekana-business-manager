@@ -63,8 +63,8 @@ export default function Wallet() {
       <PageHeader eyebrow="Finance" title="Onekana Wallet" description="Suivez le portefeuille interne ONEKANA: encaissements, décaissements, références et solde calculé depuis l’API." />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-primary/15 bg-[#111111] text-white">
-          <CardHeader><CardTitle className="flex items-center gap-2 text-lg font-black uppercase"><WalletIcon className="h-5 w-5 text-[#ffd026]" /> Solde interne</CardTitle></CardHeader>
+        <Card className="border-primary/15 bg-[#0b0b0b] text-white">
+          <CardHeader><CardTitle className="flex items-center gap-2 text-lg font-black uppercase"><WalletIcon className="h-5 w-5 text-primary" /> Solde interne</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-black">{balance.toLocaleString()} USD</div><p className="mt-1 text-xs text-white/60">Calculé depuis les comptes ou mouvements API</p></CardContent>
         </Card>
         <Card className="border-primary/15 bg-white lg:col-span-2">
