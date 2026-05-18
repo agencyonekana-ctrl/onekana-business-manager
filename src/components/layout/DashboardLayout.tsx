@@ -23,7 +23,6 @@ import { useAuth } from '../../hooks/use-auth'
 import { hasAccess } from '../../lib/access-control'
 import type { AccessRequirement } from '../../lib/access-control'
 import { Button } from '../ui/button'
-import { DataSourceBadge } from '../app/DataSourceBadge'
 import { OnboardingGuide } from '../app/OnboardingGuide'
 import { RightSideBar } from '../app/RightSideBar'
 import {
@@ -94,6 +93,11 @@ const menuGroups: MenuGroup[] = [
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
+
+  if (!user) {
+    return null
+  }
+
   const visibleGroups = menuGroups
     .map((group) => ({ ...group, items: group.items.filter((item) => hasAccess(user, item)) }))
     .filter((group) => group.items.length > 0)
@@ -183,7 +187,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </h1>
             </div>
             <div className="hidden items-center gap-3 sm:flex">
-              <DataSourceBadge />
               <div className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-bold uppercase text-primary">
                 {user.tenant?.name || 'ONEKANA'} interne
               </div>

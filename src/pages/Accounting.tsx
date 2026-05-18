@@ -46,13 +46,13 @@ export default function Accounting() {
       <PageHeader
         eyebrow="Finance"
         title="Comptabilité OHADA"
-        description="Suivez le socle SYSCOHADA: plan comptable, journaux, écritures équilibrées et balance issue de l’API Laravel."
+        description="Suivez le socle SYSCOHADA: plan comptable, journaux, ecritures equilibrees et balance comptable."
       />
 
       {error && (
         <EmptyState
-          title="API comptable indisponible"
-          description="Laravel doit exposer les endpoints /accounting/* pour afficher les données comptables."
+          title="Donnees comptables indisponibles"
+          description="Les donnees seront affichees des qu elles seront disponibles."
         />
       )}
 

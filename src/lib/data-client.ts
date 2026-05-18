@@ -1,5 +1,6 @@
 import { remoteApi } from '../services/remote-api'
 import type { ApiTable, QueryOptions, StorageUploadResult } from '../types/api'
+import { getAuthToken } from './session-storage'
 
 type RemoteResource = {
   list?: () => Promise<any[]>
@@ -77,9 +78,10 @@ export const dataClient = {
       formData.append('file', file)
       formData.append('path', path)
 
+      const token = getAuthToken()
       const response = await fetch(`${remoteApi.baseUrl}/uploads`, {
         method: 'POST',
-        headers: localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : undefined,
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       })
 

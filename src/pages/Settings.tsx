@@ -1,300 +1,152 @@
-import { useState, useEffect } from 'react'
-import { dataClient } from '../lib/data-client'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '../components/ui/card'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '../components/ui/table'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Plus, Trash2, Pencil } from 'lucide-react'
+import { useState } from 'react'
+import { HelpCircle, LogOut, ShieldCheck, UserRound } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { PageHeader } from '../components/app/PageHeader'
+import { getTourState, setTourState, type TourState } from '../lib/session-storage'
+import { useAuth } from '../hooks/use-auth'
 import { resetOnboardingGuide } from '../components/app/OnboardingGuide'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../components/ui/dialog'
-import { Label } from '../components/ui/label'
+import { PageHeader } from '../components/app/PageHeader'
+import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 
-interface CategoryType {
-  id: string
-  name: string
+const guideLabels: Record<TourState, string> = {
+  not_asked: 'Demande a afficher',
+  accepted: 'Guide en cours',
+  later: 'Mis de cote',
+  disabled: 'Desactive',
+  done: 'Termine',
 }
 
 export default function Settings() {
-  const [materialTypes, setMaterialTypes] = useState<CategoryType[]>([])
-  const [reservationTypes, setReservationTypes] = useState<CategoryType[]>([])
-  const [jobTitles, setJobTitles] = useState<CategoryType[]>([])
-  const [employeeStatuses, setEmployeeStatuses] = useState<CategoryType[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, logout } = useAuth()
+  const [tourState, setLocalTourState] = useState<TourState>(() => getTourState())
 
-  // Dialog states
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [dialogType, setDialogType] = useState<'material' | 'reservation' | 'job' | 'status'>('material')
-  const [editingItem, setEditingEditingItem] = useState<CategoryType | null>(null)
-  const [newName, setNewName] = useState('')
-
-  useEffect(() => {
-    fetchTypes()
-  }, [])
-
-  async function fetchTypes() {
-    setLoading(true)
-    try {
-      const [matList, resList, jobList, statusList] = await Promise.all([
-        dataClient.db.materialTypes.list(),
-        dataClient.db.reservationTypes.list(),
-        dataClient.db.jobTitles.list(),
-        dataClient.db.employeeStatuses.list(),
-      ])
-      setMaterialTypes(matList as CategoryType[])
-      setReservationTypes(resList as CategoryType[])
-      setJobTitles(jobList as CategoryType[])
-      setEmployeeStatuses(statusList as CategoryType[])
-    } catch {
-      toast.error('Erreur lors du chargement des paramètres')
-    } finally {
-      setLoading(false)
-    }
+  function updateTourState(state: TourState) {
+    setTourState(state)
+    setLocalTourState(state)
   }
 
-  async function handleSave() {
-    if (!newName.trim()) return
-
-    try {
-      let table
-      switch (dialogType) {
-        case 'material': table = dataClient.db.materialTypes; break
-        case 'reservation': table = dataClient.db.reservationTypes; break
-        case 'job': table = dataClient.db.jobTitles; break
-        case 'status': table = dataClient.db.employeeStatuses; break
-      }
-      
-      if (editingItem) {
-        await table.update(editingItem.id, { name: newName })
-        toast.success('Modifié avec succès')
-      } else {
-        await table.create({ name: newName })
-        toast.success('Ajouté avec succès')
-      }
-      
-      closeDialog()
-      fetchTypes()
-    } catch {
-      toast.error('Une erreur est survenue')
-    }
-  }
-
-  async function handleDelete(id: string, type: 'material' | 'reservation' | 'job' | 'status') {
-    if (!confirm('Supprimer cette catégorie ?')) return
-    try {
-      let table
-      switch (type) {
-        case 'material': table = dataClient.db.materialTypes; break
-        case 'reservation': table = dataClient.db.reservationTypes; break
-        case 'job': table = dataClient.db.jobTitles; break
-        case 'status': table = dataClient.db.employeeStatuses; break
-      }
-      await table.delete(id)
-      toast.success('Supprimé avec succès')
-      fetchTypes()
-    } catch {
-      toast.error('Erreur lors de la suppression')
-    }
-  }
-
-  function openDialog(type: 'material' | 'reservation' | 'job' | 'status', item?: CategoryType) {
-    setDialogType(type)
-    if (item) {
-      setEditingEditingItem(item)
-      setNewName(item.name)
-    } else {
-      setEditingEditingItem(null)
-      setNewName('')
-    }
-    setIsDialogOpen(true)
-  }
-
-  function closeDialog() {
-    setIsDialogOpen(false)
-    setEditingEditingItem(null)
-    setNewName('')
+  function restartGuide() {
+    resetOnboardingGuide()
+    setLocalTourState('accepted')
+    toast.success('Guide de prise en main relance')
   }
 
   return (
     <div className="space-y-8 animate-fade-in">
       <PageHeader
         eyebrow="Administration"
-        title="Paramètres"
-        description="Personnalisez les listes internes et relancez le guide de prise en main pour accompagner les utilisateurs."
-        action={
-          <Button
-            variant="outline"
-            onClick={() => {
-              resetOnboardingGuide()
-              toast.success('Guide de prise en main relancé')
-            }}
-          >
-            Relancer le guide
-          </Button>
-        }
+        title="Parametres"
+        description="Reglez votre espace personnel, vos preferences et la securite de votre compte."
       />
-      <div className="hidden">
-        <h2 className="text-3xl font-bold tracking-tight">Paramètres</h2>
-        <p className="text-muted-foreground">Personnalisez les types de données pour votre entreprise.</p>
-      </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
-        {/* Material Types */}
-        <CategoryCard
-          title="Types de Matériels"
-          description="Gérez les catégories d'équipements."
-          items={materialTypes}
-          loading={loading}
-          onAdd={() => openDialog('material')}
-          onEdit={(item) => openDialog('material', item)}
-          onDelete={(id) => handleDelete(id, 'material')}
-        />
+      <Tabs defaultValue="space" className="w-full">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+          <TabsTrigger value="space" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Mon espace</TabsTrigger>
+          <TabsTrigger value="preferences" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Preferences</TabsTrigger>
+          <TabsTrigger value="account" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Securite du compte</TabsTrigger>
+        </TabsList>
 
-        {/* Reservation Types */}
-        <CategoryCard
-          title="Types de Réservations"
-          description="Gérez les types de services pour les agences."
-          items={reservationTypes}
-          loading={loading}
-          onAdd={() => openDialog('reservation')}
-          onEdit={(item) => openDialog('reservation', item)}
-          onDelete={(id) => handleDelete(id, 'reservation')}
-        />
+        <TabsContent value="space" className="mt-6">
+          <div className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
+            <Card>
+              <CardHeader>
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <UserRound className="h-5 w-5" />
+                </div>
+                <CardTitle>Profil utilisateur</CardTitle>
+                <CardDescription>Informations de base de votre espace de travail.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <ProfileField label="Nom" value={user?.displayName || 'Utilisateur'} />
+                <ProfileField label="Email" value={user?.email || 'Non renseigne'} />
+                <ProfileField label="Organisation" value={user?.tenant?.name || 'ONEKANA'} />
+                <ProfileField label="Profil" value={friendlyRole(user?.roles?.[0])} />
+              </CardContent>
+            </Card>
 
-        {/* Job Titles */}
-        <CategoryCard
-          title="Postes / Métiers"
-          description="Gérez les intitulés de postes pour les employés."
-          items={jobTitles}
-          loading={loading}
-          onAdd={() => openDialog('job')}
-          onEdit={(item) => openDialog('job', item)}
-          onDelete={(id) => handleDelete(id, 'job')}
-        />
-
-        {/* Employee Statuses */}
-        <CategoryCard
-          title="Statuts Employés"
-          description="Gérez les différents statuts (Actif, Congé, etc.)."
-          items={employeeStatuses}
-          loading={loading}
-          onAdd={() => openDialog('status')}
-          onEdit={(item) => openDialog('status', item)}
-          onDelete={(id) => handleDelete(id, 'status')}
-        />
-      </div>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem ? 'Modifier le type' : 'Ajouter un type'}
-              {dialogType === 'material' ? ' de matériel' : 
-               dialogType === 'reservation' ? ' de réservation' :
-               dialogType === 'job' ? ' de poste' : ' de statut'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom</Label>
-              <Input
-                id="name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Entrez le nom..."
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-              />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Etat de l espace</CardTitle>
+                <CardDescription>Votre espace est pret pour le travail quotidien.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Badge className="rounded-full">Espace actif</Badge>
+                <p className="text-sm text-muted-foreground">
+                  Vous pouvez utiliser les modules autorises pour votre profil.
+                </p>
+              </CardContent>
+            </Card>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Annuler</Button>
-            <Button onClick={handleSave}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </TabsContent>
+
+        <TabsContent value="preferences" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><HelpCircle className="h-5 w-5 text-primary" /> Guide utilisateur</CardTitle>
+              <CardDescription>Choisissez quand afficher la visite de prise en main.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline">Etat actuel: {guideLabels[tourState]}</Badge>
+                <Button onClick={restartGuide}>Relancer le guide</Button>
+                <Button variant="outline" onClick={() => updateTourState('not_asked')}>Me le proposer plus tard</Button>
+                <Button variant="ghost" onClick={() => updateTourState('disabled')}>Ne plus afficher</Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Le guide ne se lance pas sans votre accord et peut etre relance a tout moment depuis cette page.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account" className="mt-6">
+          <div className="grid gap-5 lg:grid-cols-[0.8fr_1fr]">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Securite du compte</CardTitle>
+                <CardDescription>Quelques reflexes simples pour proteger votre espace.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p>Ne partagez jamais vos identifiants.</p>
+                <p>Fermez votre session lorsque vous utilisez un ordinateur partage.</p>
+                <p>Signalez rapidement tout acces inhabituel a l administrateur.</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Session</CardTitle>
+                <CardDescription>Quittez proprement le back office lorsque vous avez termine.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" className="gap-2" onClick={logout}>
+                  <LogOut className="h-4 w-4" />
+                  Deconnexion
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
 
-function CategoryCard({ 
-  title, 
-  description, 
-  items, 
-  loading, 
-  onAdd, 
-  onEdit, 
-  onDelete 
-}: { 
-  title: string, 
-  description: string, 
-  items: CategoryType[], 
-  loading: boolean, 
-  onAdd: () => void, 
-  onEdit: (item: CategoryType) => void, 
-  onDelete: (id: string) => void 
-}) {
+function friendlyRole(role?: string) {
+  if (!role) return 'Collaborateur'
+  if (role.includes('admin')) return 'Administrateur'
+  if (role.includes('sales')) return 'Commercial'
+  if (role.includes('finance')) return 'Finance'
+  return role
+}
+
+function ProfileField({ label, value }: { label: string, value: string }) {
   return (
-    <Card className="border-border/50">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-        <Button size="sm" onClick={onAdd} className="gap-2">
-          <Plus className="w-4 h-4" /> Ajouter
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow><TableCell colSpan={2} className="text-center italic">Chargement...</TableCell></TableRow>
-            ) : items.length === 0 ? (
-              <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground">Aucun élément défini.</TableCell></TableRow>
-            ) : (
-              items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(item)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => onDelete(item.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border bg-muted/25 p-4">
+      <div className="text-xs font-bold uppercase text-muted-foreground">{label}</div>
+      <div className="mt-1 break-words text-sm font-bold">{value}</div>
+    </div>
   )
 }

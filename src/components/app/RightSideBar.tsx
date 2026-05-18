@@ -138,7 +138,7 @@ export function RightSideBar() {
 
               <TabsContent value="notifications" className="mt-4 space-y-3">
                 {loading ? <PanelState text="Chargement..." /> :
-                  error ? <PanelState text="API notifications indisponible." /> :
+                  error ? <PanelState text="Notifications temporairement indisponibles." /> :
                   notifications.length === 0 ? <PanelState text="Aucune notification pour le moment." /> :
                   notifications.map((notification) => {
                     const read = Boolean(notification.readAt || notification.read_at)
@@ -162,7 +162,7 @@ export function RightSideBar() {
 
               <TabsContent value="roadmap" className="mt-4 space-y-3">
                 {loading ? <PanelState text="Chargement..." /> :
-                  error ? <PanelState text="API roadmap indisponible." /> :
+                  error ? <PanelState text="Roadmap temporairement indisponible." /> :
                   roadmap.length === 0 ? <PanelState text="Aucun élément roadmap pour le moment." /> :
                   roadmap.map((item) => (
                     <div key={item.id} className="rounded-2xl border border-border bg-white p-4 shadow-sm">
@@ -187,7 +187,7 @@ export function RightSideBar() {
           <div className="border-t border-border bg-white p-4">
             <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm text-muted-foreground">
               <Bell className="h-4 w-4" />
-              Notifications et roadmap via API
+              Centre de suivi
               <Send className="ml-auto h-4 w-4 text-muted-foreground" />
             </div>
           </div>

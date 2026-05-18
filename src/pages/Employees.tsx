@@ -26,6 +26,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '../components/ui/select'
+import { CategoryManager } from '../components/app/CategoryManager'
 import { Plus, Search, Pencil, Trash2, Building2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -227,7 +228,7 @@ export default function Employees() {
                       <SelectItem key={job.id} value={job.name}>{job.name}</SelectItem>
                     ))}
                     {jobTitles.length === 0 && (
-                      <SelectItem disabled value="none">Aucun poste défini (Paramètres)</SelectItem>
+                      <SelectItem disabled value="none">Aucun poste défini. Ajoutez-le dans cette page.</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -247,7 +248,7 @@ export default function Employees() {
                       <SelectItem key={status.id} value={status.name}>{status.name}</SelectItem>
                     ))}
                     {employeeStatuses.length === 0 && (
-                      <SelectItem disabled value="none">Aucun statut défini (Paramètres)</SelectItem>
+                      <SelectItem disabled value="none">Aucun statut défini. Ajoutez-le dans cette page.</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
@@ -349,6 +350,23 @@ export default function Employees() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CategoryManager
+          title="Postes et métiers"
+          description="Ajoutez ou corrigez les intitulés de poste utilisés dans les fiches employés."
+          itemLabel="un poste"
+          table={dataClient.db.jobTitles}
+          onChanged={fetchData}
+        />
+        <CategoryManager
+          title="Statuts employés"
+          description="Ajoutez ou corrigez les statuts disponibles pour le suivi RH."
+          itemLabel="un statut employé"
+          table={dataClient.db.employeeStatuses}
+          onChanged={fetchData}
+        />
       </div>
     </div>
   )

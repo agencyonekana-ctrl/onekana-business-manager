@@ -176,7 +176,7 @@ export default function PacksCommerciaux() {
             <PackageCheck className="h-5 w-5 text-primary" />
             Catalogue commercial
           </CardTitle>
-          <CardDescription>Données servies par l’API Laravel configurée via VITE_API_BASE_URL.</CardDescription>
+          <CardDescription>Catalogue des offres utilisees par les equipes commerciales.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table data-tour="packs-table">

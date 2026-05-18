@@ -102,11 +102,11 @@ export default function ChartOfAccounts() {
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
           {error ? (
-            <div className="p-6"><EmptyState title="API comptable indisponible" description="Endpoint attendu: GET /accounting/accounts." /></div>
+            <div className="p-6"><EmptyState title="Donnees indisponibles" description="Le plan comptable sera affiche des qu il sera disponible." /></div>
           ) : loading ? (
             <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div>
           ) : accounts.length === 0 ? (
-            <div className="p-6"><EmptyState title="Aucun compte" description="Aucun compte OHADA n’est encore retourné par l’API." /></div>
+            <div className="p-6"><EmptyState title="Aucun compte" description="Aucun compte OHADA n est encore disponible." /></div>
           ) : (
             <Table>
               <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Libellé</TableHead><TableHead>Classe</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>

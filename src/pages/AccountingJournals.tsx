@@ -84,9 +84,9 @@ export default function AccountingJournals() {
 
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
-          {error ? <div className="p-6"><EmptyState title="API indisponible" description="Endpoint attendu: GET /accounting/journals." /></div> :
+          {error ? <div className="p-6"><EmptyState title="Donnees indisponibles" description="Les journaux seront affiches des qu ils seront disponibles." /></div> :
             loading ? <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div> :
-            journals.length === 0 ? <div className="p-6"><EmptyState title="Aucun journal" description="Aucun journal comptable n’est encore retourné par l’API." /></div> :
+            journals.length === 0 ? <div className="p-6"><EmptyState title="Aucun journal" description="Aucun journal comptable n est encore disponible." /></div> :
             <Table>
               <TableHeader><TableRow><TableHead>Code</TableHead><TableHead>Nom</TableHead><TableHead>Type</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
               <TableBody>{journals.map((journal) => <TableRow key={journal.id}><TableCell className="font-mono font-bold">{journal.code}</TableCell><TableCell>{journal.name || journal.nom}</TableCell><TableCell>{journal.type}</TableCell><TableCell className="text-right"><Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteJournal(journal.id)}><Trash2 className="h-4 w-4" /></Button></TableCell></TableRow>)}</TableBody>

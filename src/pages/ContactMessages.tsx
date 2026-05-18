@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Mail, Trash2 } from 'lucide-react'
+import { CheckCircle2, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { dataClient } from '../lib/data-client'
 import { Button } from '../components/ui/button'
@@ -8,6 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../components/ui/tooltip'
 import { PageHeader } from '../components/app/PageHeader'
 import { EmptyState } from '../components/app/EmptyState'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
 
 type ContactMessage = {
   id: string
@@ -23,6 +27,8 @@ type ContactMessage = {
 export default function ContactMessages() {
   const [messages, setMessages] = useState<ContactMessage[]>([])
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState<ContactMessage | null>(null)
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
 
   useEffect(() => {
     fetchMessages()
@@ -47,6 +53,35 @@ export default function ContactMessages() {
       fetchMessages()
     } catch {
       toast.error('Impossible de mettre à jour la demande')
+    }
+  }
+
+  function openEdit(message: ContactMessage) {
+    setEditing(message)
+    setForm({
+      name: message.name || '',
+      email: message.email || '',
+      subject: message.subject || '',
+      message: message.message || '',
+    })
+  }
+
+  function closeEdit() {
+    setEditing(null)
+    setForm({ name: '', email: '', subject: '', message: '' })
+  }
+
+  async function handleSaveEdit(event: React.FormEvent) {
+    event.preventDefault()
+    if (!editing) return
+
+    try {
+      await dataClient.db.contactMessages.update(editing.id, { ...editing, ...form })
+      toast.success('Demande modifiee')
+      closeEdit()
+      fetchMessages()
+    } catch {
+      toast.error('Impossible de modifier la demande')
     }
   }
 
@@ -77,7 +112,7 @@ export default function ContactMessages() {
             <div className="p-6">
               <EmptyState
                 title="Aucune demande client"
-                description="Les nouveaux messages du site public apparaîtront ici dès qu’ils seront disponibles via l’API ou les données locales."
+                description="Les nouveaux messages du site public apparaîtront ici dès qu’ils seront disponibles."
               />
             </div>
           ) : (
@@ -111,6 +146,16 @@ export default function ContactMessages() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(message)} aria-label="Modifier la demande">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Modifier la demande</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" onClick={() => markHandled(message)} aria-label="Marquer comme traitée">
                               <CheckCircle2 className="h-4 w-4" />
                             </Button>
@@ -136,6 +181,38 @@ export default function ContactMessages() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && closeEdit()}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Modifier la demande client</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveEdit} className="space-y-4 pt-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="request-name">Nom</Label>
+                <Input id="request-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="request-email">Email</Label>
+                <Input id="request-email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="request-subject">Besoin</Label>
+              <Input id="request-subject" value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="request-message">Message</Label>
+              <Textarea id="request-message" value={form.message} onChange={(event) => setForm({ ...form, message: event.target.value })} rows={4} required />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeEdit}>Annuler</Button>
+              <Button type="submit">Enregistrer</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -6,25 +6,28 @@ export type AccessRequirement = {
   moduleKey?: ModuleKey
 }
 
-export function can(user: AuthUser, permission?: Permission) {
+export function can(user: AuthUser | null, permission?: Permission) {
+  if (!user) return false
   if (!permission) return true
   if (user.permissions.includes('*')) return true
   return user.permissions.includes(permission)
 }
 
-export function canAny(user: AuthUser, permissions: Permission[] = []) {
+export function canAny(user: AuthUser | null, permissions: Permission[] = []) {
+  if (!user) return false
   if (permissions.length === 0) return true
   if (user.permissions.includes('*')) return true
   return permissions.some((permission) => user.permissions.includes(permission))
 }
 
-export function canModule(user: AuthUser, moduleKey?: ModuleKey) {
+export function canModule(user: AuthUser | null, moduleKey?: ModuleKey) {
+  if (!user) return false
   if (!moduleKey) return true
   if (user.permissions.includes('*')) return true
   return user.modules.includes(moduleKey) || user.tenant?.modules?.includes(moduleKey) || false
 }
 
-export function hasAccess(user: AuthUser, requirement: AccessRequirement = {}) {
+export function hasAccess(user: AuthUser | null, requirement: AccessRequirement = {}) {
   return canModule(user, requirement.moduleKey)
     && can(user, requirement.permission)
     && canAny(user, requirement.permissions)

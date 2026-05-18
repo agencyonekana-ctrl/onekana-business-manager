@@ -82,9 +82,9 @@ export default function Wallet() {
 
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
-          {error ? <div className="p-6"><EmptyState title="API Wallet indisponible" description="Endpoints attendus: /wallet/accounts et /wallet/transactions." /></div> :
+          {error ? <div className="p-6"><EmptyState title="Donnees indisponibles" description="Les mouvements du portefeuille seront affiches des qu ils seront disponibles." /></div> :
             loading ? <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div> :
-            transactions.length === 0 ? <div className="p-6"><EmptyState title="Aucun mouvement" description="Aucun mouvement Wallet n’est encore retourné par l’API." /></div> :
+            transactions.length === 0 ? <div className="p-6"><EmptyState title="Aucun mouvement" description="Aucun mouvement Wallet n est encore disponible." /></div> :
             <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Source</TableHead><TableHead>Référence</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader><TableBody>{transactions.map((transaction) => <TableRow key={transaction.id}><TableCell>{transaction.date || transaction.createdAt || 'N/A'}</TableCell><TableCell>{transaction.type}</TableCell><TableCell>{transaction.source || 'N/A'}</TableCell><TableCell>{transaction.reference || 'N/A'}</TableCell><TableCell className="text-right">{Number(transaction.amount ?? transaction.montant ?? 0).toLocaleString()} USD</TableCell></TableRow>)}</TableBody></Table>}
         </CardContent>
       </Card>

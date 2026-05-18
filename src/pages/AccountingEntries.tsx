@@ -90,9 +90,9 @@ export default function AccountingEntries() {
 
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
-          {error ? <div className="p-6"><EmptyState title="API indisponible" description="Endpoints attendus: /accounting/entries, /accounting/accounts et /accounting/journals." /></div> :
+          {error ? <div className="p-6"><EmptyState title="Donnees indisponibles" description="Les ecritures seront affichees des qu elles seront disponibles." /></div> :
             loading ? <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div> :
-            entries.length === 0 ? <div className="p-6"><EmptyState title="Aucune écriture" description="Aucune écriture comptable n’est encore retournée par l’API." /></div> :
+            entries.length === 0 ? <div className="p-6"><EmptyState title="Aucune ecriture" description="Aucune ecriture comptable n est encore disponible." /></div> :
             <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Libellé</TableHead><TableHead>Référence</TableHead><TableHead className="text-right">Débit</TableHead><TableHead className="text-right">Crédit</TableHead></TableRow></TableHeader><TableBody>{entries.map((entry) => <TableRow key={entry.id}><TableCell>{entry.date}</TableCell><TableCell>{entry.label || entry.libelle}</TableCell><TableCell>{entry.reference || 'N/A'}</TableCell><TableCell className="text-right">{Number(entry.totalDebit || 0).toLocaleString()} USD</TableCell><TableCell className="text-right">{Number(entry.totalCredit || 0).toLocaleString()} USD</TableCell></TableRow>)}</TableBody></Table>}
         </CardContent>
       </Card>

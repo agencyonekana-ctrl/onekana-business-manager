@@ -27,7 +27,7 @@ import {
   SelectValue 
 } from '../components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
-import { Plus, Megaphone, Trash2, Eye, Calculator, Calendar as CalendarIcon, List } from 'lucide-react'
+import { Plus, Megaphone, Trash2, Eye, Calculator, Calendar as CalendarIcon, List, Pencil } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { toast } from 'react-hot-toast'
 import { format, addDays, startOfToday, isWithinInterval, parseISO } from 'date-fns'
@@ -92,6 +92,7 @@ export default function Campaigns() {
   // Dialog States
   const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false)
   const [isLineDialogOpen, setIsLineDialogOpen] = useState(false)
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
 
   const [campaignForm, setCampaignForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
   const [lineForm, setLineForm] = useState({ emplacementId: '', assetId: '', totalPrice: 0 })
@@ -134,16 +135,56 @@ export default function Campaigns() {
     }
   }
 
+  function openCampaignDialog(campaign?: Campaign) {
+    setEditingCampaign(campaign || null)
+    setCampaignForm(campaign ? {
+      name: campaign.name,
+      clientName: campaign.clientName,
+      startDate: campaign.startDate,
+      endDate: campaign.endDate,
+      status: campaign.status || 'draft',
+    } : { name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
+    setIsCampaignDialogOpen(true)
+  }
+
+  function closeCampaignDialog() {
+    setIsCampaignDialogOpen(false)
+    setEditingCampaign(null)
+    setCampaignForm({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
+  }
+
   async function handleCampaignSubmit(e: React.FormEvent) {
     e.preventDefault()
     try {
-      await dataClient.db.oohCampaigns.create(campaignForm)
-      toast.success('Campagne créée')
-      setIsCampaignDialogOpen(false)
-      setCampaignForm({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
+      if (editingCampaign) {
+        await dataClient.db.oohCampaigns.update(editingCampaign.id, campaignForm)
+        toast.success('Campagne modifiee')
+        setSelectedCampaign({ ...editingCampaign, ...campaignForm })
+      } else {
+        await dataClient.db.oohCampaigns.create(campaignForm)
+        toast.success('Campagne creee')
+      }
+      closeCampaignDialog()
       fetchData()
     } catch (error) {
-      toast.error('Erreur lors de la création')
+      toast.error('Erreur lors de l enregistrement')
+    }
+  }
+
+  async function handleCampaignDelete(campaign: Campaign) {
+    if (!confirm(`Supprimer la campagne "${campaign.name}" et ses lignes de vente ?`)) return
+    try {
+      const lines = await dataClient.db.oohCampaignLines.list<CampaignLine>({ where: { campaignId: campaign.id } })
+      await Promise.all(lines.map((line) => dataClient.db.oohCampaignLines.delete(line.id)))
+      await dataClient.db.oohCampaigns.delete(campaign.id)
+      toast.success('Campagne supprimee')
+      if (selectedCampaign?.id === campaign.id) {
+        setSelectedCampaign(null)
+        setCampaignLines([])
+      }
+      fetchData()
+    } catch {
+      toast.error('Erreur lors de la suppression')
     }
   }
 
@@ -221,12 +262,12 @@ export default function Campaigns() {
           <h2 className="text-3xl font-bold tracking-tight">Campagnes & Réservations</h2>
           <p className="text-muted-foreground">Gérez les réservations d'emplacements et les lignes de vente par campagne.</p>
         </div>
-        <Dialog open={isCampaignDialogOpen} onOpenChange={setIsCampaignDialogOpen}>
+        <Dialog open={isCampaignDialogOpen} onOpenChange={(open) => open ? setIsCampaignDialogOpen(true) : closeCampaignDialog()}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="w-4 h-4" /> Nouvelle Campagne</Button>
+            <Button className="gap-2" onClick={() => openCampaignDialog()}><Plus className="w-4 h-4" /> Nouvelle Campagne</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Créer une campagne</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingCampaign ? 'Modifier la campagne' : 'Creer une campagne'}</DialogTitle></DialogHeader>
             <form onSubmit={handleCampaignSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="cname">Nom de la campagne</Label>
@@ -246,7 +287,7 @@ export default function Campaigns() {
                   <Input id="end" type="date" value={campaignForm.endDate} onChange={(e) => setCampaignForm({...campaignForm, endDate: e.target.value})} required />
                 </div>
               </div>
-              <DialogFooter><Button type="submit" className="w-full">Créer la campagne</Button></DialogFooter>
+              <DialogFooter><Button type="submit" className="w-full">Enregistrer</Button></DialogFooter>
             </form>
           </DialogContent>
         </Dialog>
@@ -272,17 +313,26 @@ export default function Campaigns() {
                 <div className="divide-y border-t">
                   {loading ? <div className="p-4 text-center">Chargement...</div> : 
                     campaigns.map(c => (
-                      <button 
+                      <div 
                         key={c.id} 
-                        className={`w-full text-left p-4 hover:bg-muted/50 transition-colors flex justify-between items-center ${selectedCampaign?.id === c.id ? 'bg-primary/5 border-l-4 border-primary' : ''}`}
-                        onClick={() => { setSelectedCampaign(c); fetchLines(c.id); }}
+                        className={`w-full p-4 hover:bg-muted/50 transition-colors flex justify-between items-center gap-3 ${selectedCampaign?.id === c.id ? 'bg-primary/5 border-l-4 border-primary' : ''}`}
                       >
-                        <div className="space-y-1">
-                          <div className="font-semibold">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">{c.clientName}</div>
+                        <button className="min-w-0 flex-1 text-left" onClick={() => { setSelectedCampaign(c); fetchLines(c.id); }}>
+                          <div className="space-y-1">
+                            <div className="font-semibold">{c.name}</div>
+                            <div className="text-xs text-muted-foreground">{c.clientName}</div>
+                          </div>
+                        </button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCampaignDialog(c)} aria-label="Modifier la campagne">
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCampaignDelete(c)} aria-label="Supprimer la campagne">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <Eye className="w-4 h-4 text-muted-foreground" />
                         </div>
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                      </button>
+                      </div>
                     ))}
                 </div>
               </CardContent>

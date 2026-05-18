@@ -27,6 +27,7 @@ import {
   SelectValue 
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
+import { CategoryManager } from '../components/app/CategoryManager'
 import { Plus, Search, Pencil, Trash2, Package, User } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -206,7 +207,7 @@ export default function Materials() {
                         <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
                       ))}
                       {materialTypes.length === 0 && (
-                        <SelectItem disabled value="none">Aucun type défini (Paramètres)</SelectItem>
+                        <SelectItem disabled value="none">Aucun type défini. Ajoutez-le dans cette page.</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -394,6 +395,14 @@ export default function Materials() {
           </TableBody>
         </Table>
       </div>
+
+      <CategoryManager
+        title="Types de matériels"
+        description="Ajoutez ou corrigez les catégories utilisées dans le formulaire matériel."
+        itemLabel="un type de matériel"
+        table={dataClient.db.materialTypes}
+        onChanged={fetchData}
+      />
     </div>
   )
 }

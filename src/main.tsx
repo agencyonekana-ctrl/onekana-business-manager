@@ -4,7 +4,10 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 
 import './index.css'
+import { AuthProvider } from './hooks/use-auth'
+import { AuthRoute } from './components/app/AuthRoute'
 import { DashboardLayout } from './components/layout/DashboardLayout'
+import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Employees from './pages/Employees'
 import Departments from './pages/Departments'
@@ -32,33 +35,43 @@ function protect(element: React.ReactNode, moduleKey: ModuleKey, permission: Per
 
 function App() {
   return (
-    <BrowserRouter>
-      <DashboardLayout>
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={protect(<Dashboard />, 'dashboard', 'dashboard.view')} />
-          <Route path="/employees" element={protect(<Employees />, 'team', 'team.view')} />
-          <Route path="/departments" element={protect(<Departments />, 'administration', 'administration.view')} />
-          <Route path="/campaigns" element={protect(<Campaigns />, 'sales', 'sales.view')} />
-          <Route path="/inventory" element={protect(<Inventory />, 'inventory', 'inventory.view')} />
-          <Route path="/materials" element={protect(<Materials />, 'operations', 'operations.view')} />
-          <Route path="/reservations" element={protect(<Reservations />, 'sales', 'sales.view')} />
-          <Route path="/documents" element={protect(<Documents />, 'operations', 'operations.view')} />
-          <Route path="/schedules" element={protect(<Schedules />, 'operations', 'operations.view')} />
-          <Route path="/packs" element={protect(<PacksCommerciaux />, 'sales', 'sales.view')} />
-          <Route path="/demandes" element={protect(<ContactMessages />, 'sales', 'sales.view')} />
-          <Route path="/contact-messages" element={<Navigate to="/demandes" replace />} />
-          <Route path="/accounting" element={protect(<Accounting />, 'finance', 'finance.view')} />
-          <Route path="/accounting/chart-of-accounts" element={protect(<ChartOfAccounts />, 'finance', 'finance.view')} />
-          <Route path="/accounting/journals" element={protect(<AccountingJournals />, 'finance', 'finance.view')} />
-          <Route path="/accounting/entries" element={protect(<AccountingEntries />, 'finance', 'finance.view')} />
-          <Route path="/wallet" element={protect(<Wallet />, 'finance', 'finance.view')} />
-          <Route path="/invoices" element={protect(<Invoices />, 'finance', 'finance.view')} />
-          <Route path="/settings" element={protect(<Settings />, 'settings', 'settings.manage')} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={
+            <AuthRoute>
+              <DashboardLayout>
+                <Routes>
+                  <Route path="/" element={protect(<Dashboard />, 'dashboard', 'dashboard.view')} />
+                  <Route path="/employees" element={protect(<Employees />, 'team', 'team.view')} />
+                  <Route path="/departments" element={protect(<Departments />, 'administration', 'administration.view')} />
+                  <Route path="/campaigns" element={protect(<Campaigns />, 'sales', 'sales.view')} />
+                  <Route path="/inventory" element={protect(<Inventory />, 'inventory', 'inventory.view')} />
+                  <Route path="/materials" element={protect(<Materials />, 'operations', 'operations.view')} />
+                  <Route path="/reservations" element={protect(<Reservations />, 'sales', 'sales.view')} />
+                  <Route path="/documents" element={protect(<Documents />, 'operations', 'operations.view')} />
+                  <Route path="/schedules" element={protect(<Schedules />, 'operations', 'operations.view')} />
+                  <Route path="/packs" element={protect(<PacksCommerciaux />, 'sales', 'sales.view')} />
+                  <Route path="/demandes" element={protect(<ContactMessages />, 'sales', 'sales.view')} />
+                  <Route path="/contact-messages" element={<Navigate to="/demandes" replace />} />
+                  <Route path="/accounting" element={protect(<Accounting />, 'finance', 'finance.view')} />
+                  <Route path="/accounting/chart-of-accounts" element={protect(<ChartOfAccounts />, 'finance', 'finance.view')} />
+                  <Route path="/accounting/journals" element={protect(<AccountingJournals />, 'finance', 'finance.view')} />
+                  <Route path="/accounting/entries" element={protect(<AccountingEntries />, 'finance', 'finance.view')} />
+                  <Route path="/wallet" element={protect(<Wallet />, 'finance', 'finance.view')} />
+                  <Route path="/invoices" element={protect(<Invoices />, 'finance', 'finance.view')} />
+                  <Route path="/settings" element={protect(<Settings />, 'settings', 'settings.manage')} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </DashboardLayout>
+            </AuthRoute>
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </DashboardLayout>
-      <Toaster position="top-right" />
-    </BrowserRouter>
+        <Toaster position="top-right" />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

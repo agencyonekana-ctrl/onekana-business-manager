@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, HelpCircle, X } from 'lucide-react'
+import { ArrowRight, CheckCircle2, HelpCircle, PlayCircle, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Progress } from '../ui/progress'
+import { clearLegacyTourState, getTourState, setTourState, type TourState } from '../../lib/session-storage'
 
-const STORAGE_KEY = 'onekana:tour:v1'
 const RESET_EVENT = 'onekana:tour-reset'
 
 type TourStep = {
@@ -21,35 +21,35 @@ const steps: TourStep[] = [
     route: '/',
     target: 'dashboard-kpis',
     title: 'Lire le tableau de bord',
-    description: 'Commencez par les indicateurs commerciaux: demandes, campagnes, revenus et disponibilités.',
+    description: 'Commencez par les indicateurs commerciaux: demandes, campagnes, revenus et disponibilites.',
   },
   {
     id: 'lead',
     route: '/demandes',
     target: 'client-requests-table',
     title: 'Traiter une demande client',
-    description: 'Les messages du site public arrivent ici. L’objectif est de qualifier le besoin avant de préparer une offre.',
+    description: 'Les messages du site public arrivent ici. Qualifiez le besoin avant de preparer une offre.',
   },
   {
     id: 'packs',
     route: '/packs',
     target: 'packs-table',
     title: 'Choisir un pack commercial',
-    description: 'Les packs servent de base aux devis et accélèrent la préparation commerciale.',
+    description: 'Les packs servent de base aux devis et accelerent la preparation commerciale.',
   },
   {
     id: 'campaign',
     route: '/campaigns',
     target: 'campaigns-workspace',
-    title: 'Créer une campagne',
-    description: 'Créez la campagne client, puis ajoutez les lignes de réservation d’emplacements.',
+    title: 'Creer une campagne',
+    description: 'Creez la campagne client, puis ajoutez les lignes de reservation d emplacements.',
   },
   {
     id: 'inventory',
     route: '/inventory',
     target: 'inventory-tabs',
-    title: 'Vérifier les disponibilités',
-    description: 'L’inventaire rassemble les sites, supports, emplacements et visuels disponibles.',
+    title: 'Verifier les disponibilites',
+    description: 'L inventaire rassemble les sites, supports, emplacements et visuels disponibles.',
   },
   {
     id: 'documents',
@@ -60,29 +60,28 @@ const steps: TourStep[] = [
   },
 ]
 
-function readStepIndex() {
-  const value = Number(localStorage.getItem(STORAGE_KEY) || '0')
-  return Number.isFinite(value) ? Math.min(Math.max(value, 0), steps.length - 1) : 0
-}
-
 export function resetOnboardingGuide() {
-  localStorage.setItem(STORAGE_KEY, '0')
+  setTourState('accepted')
   window.dispatchEvent(new Event(RESET_EVENT))
 }
 
 export function OnboardingGuide() {
   const navigate = useNavigate()
-  const [stepIndex, setStepIndex] = useState(() => readStepIndex())
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(STORAGE_KEY) === 'done')
+  const [state, setState] = useState<TourState>(() => getTourState())
+  const [stepIndex, setStepIndex] = useState(0)
   const [targetFound, setTargetFound] = useState(false)
 
   const step = steps[stepIndex]
   const progress = useMemo(() => Math.round(((stepIndex + 1) / steps.length) * 100), [stepIndex])
 
   useEffect(() => {
+    clearLegacyTourState()
+  }, [])
+
+  useEffect(() => {
     const handleReset = () => {
+      setState('accepted')
       setStepIndex(0)
-      setDismissed(false)
       navigate(steps[0].route)
     }
     window.addEventListener(RESET_EVENT, handleReset)
@@ -90,11 +89,11 @@ export function OnboardingGuide() {
   }, [navigate])
 
   useEffect(() => {
-    if (!dismissed) localStorage.setItem(STORAGE_KEY, String(stepIndex))
-  }, [dismissed, stepIndex])
+    setTourState(state)
+  }, [state])
 
   useEffect(() => {
-    if (dismissed) return
+    if (state !== 'accepted') return
     if (window.location.pathname !== step.route) {
       navigate(step.route)
       return
@@ -118,32 +117,57 @@ export function OnboardingGuide() {
       target?.classList.remove('tour-target-ring')
       document.querySelector(`[data-tour="${step.target}"]`)?.classList.remove('tour-target-ring')
     }
-  }, [dismissed, navigate, step])
+  }, [navigate, state, step])
 
-  if (dismissed) return null
+  if (state === 'done' || state === 'disabled' || state === 'later') return null
+
+  if (state === 'not_asked') {
+    return (
+      <aside className="fixed bottom-4 right-4 z-50 w-[min(390px,calc(100vw-2rem))] rounded-2xl border border-border bg-white p-4 shadow-xl">
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-primary/10 p-2 text-primary">
+            <PlayCircle className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-black uppercase">Voulez-vous faire la visite guidee ?</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Elle vous montre le parcours principal du back office sans modifier vos donnees.
+            </p>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setState('later')} aria-label="Fermer">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <Button size="sm" onClick={() => setState('accepted')}>Commencer</Button>
+          <Button size="sm" variant="outline" onClick={() => setState('later')}>Plus tard</Button>
+          <Button size="sm" variant="ghost" onClick={() => setState('disabled')}>Ne plus afficher</Button>
+        </div>
+      </aside>
+    )
+  }
 
   function completeStep() {
     if (stepIndex >= steps.length - 1) {
-      localStorage.setItem(STORAGE_KEY, 'done')
-      setDismissed(true)
+      setState('done')
       return
     }
     setStepIndex((current) => current + 1)
   }
 
   return (
-    <aside className="fixed bottom-4 right-4 z-50 w-[min(390px,calc(100vw-2rem))] rounded-lg border border-primary/20 bg-white p-4 shadow-xl">
+    <aside className="fixed bottom-4 right-4 z-50 w-[min(390px,calc(100vw-2rem))] rounded-2xl border border-primary/20 bg-white p-4 shadow-xl">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary">
+          <div className="rounded-xl bg-primary/10 p-2 text-primary">
             <HelpCircle className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-black uppercase">Visite guidée ONEKANA</h3>
+            <h3 className="text-sm font-black uppercase">Visite guidee ONEKANA</h3>
             <p className="mt-1 text-xs text-muted-foreground">Etape {stepIndex + 1} sur {steps.length}</p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setDismissed(true)} aria-label="Masquer la visite">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setState('later')} aria-label="Masquer la visite">
           <X className="h-4 w-4" />
         </Button>
       </div>
@@ -161,7 +185,7 @@ export function OnboardingGuide() {
       <div className="mt-4 flex items-center justify-between gap-3">
         <span className={`flex items-center gap-1 text-xs font-bold ${targetFound ? 'text-green-700' : 'text-amber-700'}`}>
           <CheckCircle2 className="h-4 w-4" />
-          {targetFound ? 'Zone trouvée' : 'Recherche de la zone'}
+          {targetFound ? 'Zone trouvee' : 'Recherche de la zone'}
         </span>
         <Button size="sm" onClick={completeStep} disabled={!targetFound} className="gap-2">
           {stepIndex >= steps.length - 1 ? 'Terminer' : 'Continuer'}

@@ -28,6 +28,7 @@ import {
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { Badge } from '../components/ui/badge'
+import { CategoryManager } from '../components/app/CategoryManager'
 import { Plus, Search, Pencil, Trash2, BookMarked, Building2, Phone, Mail, CalendarRange } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -231,7 +232,7 @@ export default function Reservations() {
                     <SelectContent>
                       {reservationTypes.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}
                       {reservationTypes.length === 0 && (
-                        <SelectItem disabled value="none">Aucun type défini (Paramètres)</SelectItem>
+                        <SelectItem disabled value="none">Aucun type défini. Ajoutez-le dans cette page.</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -390,6 +391,14 @@ export default function Reservations() {
           </TableBody>
         </Table>
       </div>
+
+      <CategoryManager
+        title="Types de réservations"
+        description="Ajoutez ou corrigez les services proposés aux agences."
+        itemLabel="un type de réservation"
+        table={dataClient.db.reservationTypes}
+        onChanged={fetchData}
+      />
     </div>
   )
 }

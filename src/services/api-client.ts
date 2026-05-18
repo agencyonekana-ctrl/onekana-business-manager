@@ -18,7 +18,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): Promise<T> {
-  const token = localStorage.getItem('token')
+  const token = getAuthToken()
   const headers = new Headers(options.headers)
 
   headers.set('Accept', 'application/json')
@@ -37,8 +37,17 @@ export async function apiFetch<T>(url: string, options: ApiFetchOptions = {}): P
   })
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '')
-    throw new ApiError(response.status, response.statusText, errorText || `Erreur API ${response.status}`)
+    if (response.status === 401) {
+      clearAuthToken()
+      window.dispatchEvent(new Event('onekana:auth-expired'))
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.assign('/login')
+      }
+    }
+
+    const errorPayload = await response.json().catch(() => null)
+    const message = errorPayload?.message || errorPayload?.error || `Erreur API ${response.status}`
+    throw new ApiError(response.status, response.statusText, message)
   }
 
   if (response.status === 204) {
@@ -54,4 +63,5 @@ export function unwrapApiData<T>(payload: unknown): T {
   }
   return payload as T
 }
+import { clearAuthToken, getAuthToken } from '../lib/session-storage'
 
