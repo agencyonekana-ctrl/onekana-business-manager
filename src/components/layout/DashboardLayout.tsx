@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   BookMarked,
   Building2,
@@ -56,52 +56,63 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    label: 'Ventes OOH',
+    label: 'Administration commerciale',
     items: [
       { icon: Mail, label: 'Demandes clients', path: '/demandes', moduleKey: 'sales', permission: 'sales.view' },
-      { icon: PackageCheck, label: 'Packs commerciaux', path: '/packs', moduleKey: 'sales', permission: 'sales.view' },
       { icon: Megaphone, label: 'Campagnes', path: '/campaigns', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: PackageCheck, label: 'Packs commerciaux', path: '/packs', moduleKey: 'sales', permission: 'sales.view' },
+      { icon: BookMarked, label: 'Reservations agences', path: '/reservations', moduleKey: 'sales', permission: 'sales.view' },
+    ],
+  },
+  {
+    label: 'Administration OOH',
+    items: [
       { icon: MapPin, label: 'Inventaire publicitaire', path: '/inventory', moduleKey: 'inventory', permission: 'inventory.view' },
-    ],
-  },
-  {
-    label: 'Gestion interne',
-    items: [
-      { icon: Users, label: 'Équipe', path: '/employees', moduleKey: 'team', permission: 'team.view' },
-      { icon: Package, label: 'Matériels', path: '/materials', moduleKey: 'operations', permission: 'operations.view' },
       { icon: FileText, label: 'Documents', path: '/documents', moduleKey: 'operations', permission: 'operations.view' },
+    ],
+  },
+  {
+    label: 'Administration interne',
+    items: [
+      { icon: Users, label: 'Equipe', path: '/employees', moduleKey: 'team', permission: 'team.view' },
+      { icon: Package, label: 'Materiels', path: '/materials', moduleKey: 'operations', permission: 'operations.view' },
       { icon: Calendar, label: 'Horaires', path: '/schedules', moduleKey: 'operations', permission: 'operations.view' },
+      { icon: Building2, label: 'Departements', path: '/departments', moduleKey: 'administration', permission: 'administration.view' },
     ],
   },
   {
-    label: 'Finance',
+    label: 'Finance & controle',
     items: [
-      { icon: Landmark, label: 'Comptabilité OHADA', path: '/accounting', moduleKey: 'finance', permission: 'finance.view' },
-      { icon: Wallet, label: 'Onekana Wallet', path: '/wallet', moduleKey: 'finance', permission: 'finance.view' },
       { icon: ReceiptText, label: 'Factures & Paiements', path: '/invoices', moduleKey: 'finance', permission: 'finance.view' },
+      { icon: Wallet, label: 'Onekana Wallet', path: '/wallet', moduleKey: 'finance', permission: 'finance.view' },
+      { icon: Landmark, label: 'Comptabilite OHADA', path: '/accounting', moduleKey: 'finance', permission: 'finance.view' },
     ],
   },
   {
-    label: 'Administration',
+    label: 'Systeme',
     items: [
-      { icon: Building2, label: 'Départements', path: '/departments', moduleKey: 'administration', permission: 'administration.view' },
-      { icon: BookMarked, label: 'Réservations agences', path: '/reservations', moduleKey: 'sales', permission: 'sales.view' },
-      { icon: Settings, label: 'Paramètres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
+      { icon: Settings, label: 'Parametres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
     ],
   },
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
+  const location = useLocation()
 
   if (!user) {
     return null
+  }
+
+  function isActivePath(path: string) {
+    return path === '/' ? location.pathname === '/' : location.pathname === path
   }
 
   const visibleGroups = menuGroups
     .map((group) => ({ ...group, items: group.items.filter((item) => hasAccess(user, item)) }))
     .filter((group) => group.items.length > 0)
   const visibleItems = visibleGroups.flatMap((group) => group.items)
+  const activeItem = visibleItems.find((item) => isActivePath(item.path))
 
   return (
     <SidebarProvider>
@@ -113,8 +124,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <img src="/logo%20onekana.png" alt="ONEKANA" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 px-1">
-                <span className="block text-sm font-black uppercase tracking-wide text-white">Back Office</span>
-                <span className="block text-[11px] font-semibold uppercase text-primary">Régie & opérations</span>
+                <span className="block text-sm font-black uppercase tracking-wide text-white">Centre admin ONEKANA</span>
+                <span className="block text-[11px] font-semibold uppercase text-primary">Pilotage interne</span>
               </div>
             </div>
           </SidebarHeader>
@@ -128,28 +139,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   {group.items.map((item) => (
                     <SidebarMenuItem key={item.path}>
                       <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.path}
-                          className={({ isActive }) =>
-                            `relative flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all ${
-                              isActive
-                                ? 'border-white/10 bg-white/[0.08] text-white shadow-sm'
-                                : 'border-transparent text-white/78 hover:border-white/10 hover:bg-white/[0.06] hover:text-white'
-                            }`
-                          }
-                        >
-                          {window.location.pathname === item.path && (
-                            <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" />
-                          )}
-                          <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                            window.location.pathname === item.path ? 'bg-primary/15 text-primary' : 'bg-white/[0.07] text-white/78'
-                          }`}>
-                            <item.icon className="h-4 w-4" />
-                          </span>
-                          <span className="font-semibold">{item.label}</span>
-                          {window.location.pathname === item.path && (
-                            <ChevronRight className="ml-auto h-4 w-4 text-primary" />
-                          )}
+                        <NavLink to={item.path} className="block">
+                          {(() => {
+                            const active = isActivePath(item.path)
+                            return (
+                              <span
+                                className={`relative flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all ${
+                                  active
+                                    ? 'border-white/10 bg-white/[0.08] text-white shadow-sm'
+                                    : 'border-transparent text-white/78 hover:border-white/10 hover:bg-white/[0.06] hover:text-white'
+                                }`}
+                              >
+                                {active && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" />}
+                                <span className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+                                  active ? 'bg-primary/15 text-primary' : 'bg-white/[0.07] text-white/78'
+                                }`}>
+                                  <item.icon className="h-4 w-4" />
+                                </span>
+                                <span className="font-semibold">{item.label}</span>
+                                {active && <ChevronRight className="ml-auto h-4 w-4 text-primary" />}
+                              </span>
+                            )
+                          })()}
                         </NavLink>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -174,7 +185,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               onClick={() => logout()}
             >
               <LogOut className="h-5 w-5" />
-              <span>Déconnexion</span>
+              <span>Deconnexion</span>
             </Button>
           </div>
         </Sidebar>
@@ -183,12 +194,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <h1 className="text-base font-black uppercase tracking-wide">
-                {visibleItems.find((item) => item.path === window.location.pathname)?.label || 'Dashboard'}
+                {activeItem?.label || 'Tableau de bord'}
               </h1>
             </div>
             <div className="hidden items-center gap-3 sm:flex">
               <div className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs font-bold uppercase text-primary">
-                {user.tenant?.name || 'ONEKANA'} interne
+                {user.tenant?.name || 'ONEKANA'}
               </div>
             </div>
           </header>
