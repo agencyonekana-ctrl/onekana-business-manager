@@ -17,7 +17,8 @@ export const remoteApi = {
   auth: {
     register: (data: unknown) => apiFetch(API_ENDPOINTS.auth.register, { method: 'POST', body: data }),
     login: (data: unknown) => apiFetch(API_ENDPOINTS.auth.login, { method: 'POST', body: data }),
-    logout: () => apiFetch(API_ENDPOINTS.auth.logout, { method: 'POST' }),
+    refresh: () => apiFetch(API_ENDPOINTS.auth.refresh, { method: 'POST', skipAuthRefresh: true, suppressAuthFailure: true }),
+    logout: () => apiFetch(API_ENDPOINTS.auth.logout, { method: 'POST', skipAuthRefresh: true, suppressAuthFailure: true }),
     me: () => apiFetch(API_ENDPOINTS.auth.me),
   },
 
@@ -35,7 +36,6 @@ export const remoteApi = {
   oohSites: resource(API_ENDPOINTS.oohSites),
   oohSupports: resource(API_ENDPOINTS.oohSupports),
   oohEmplacements: resource(API_ENDPOINTS.oohEmplacements),
-  oohAssets: resource(API_ENDPOINTS.oohAssets),
   oohPricingRules: resource(API_ENDPOINTS.oohPricingRules),
   oohCampaigns: resource(API_ENDPOINTS.oohCampaigns),
   oohCampaignLines: resource(API_ENDPOINTS.oohCampaignLines),

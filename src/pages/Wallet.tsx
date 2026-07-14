@@ -19,7 +19,9 @@ export default function Wallet() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
-  useEffect(() => { fetchData() }, [])
+  useEffect(() => {
+    fetchData()
+  }, [])
 
   async function fetchData() {
     setLoading(true)
@@ -43,38 +45,87 @@ export default function Wallet() {
     return ['outflow', 'decaissement', 'debit'].includes(transaction.type) ? total - amount : total + amount
   }, 0), [transactions])
 
-  const apiBalance = accounts.reduce((total, account) => total + Number(account.balance ?? account.solde ?? 0), 0)
-  const balance = accounts.length > 0 ? apiBalance : computedBalance
+  const accountBalance = accounts.reduce((total, account) => total + Number(account.balance ?? account.solde ?? 0), 0)
+  const balance = accounts.length > 0 ? accountBalance : computedBalance
 
   async function createTransaction(event: React.FormEvent) {
     event.preventDefault()
     try {
       await dataClient.db.walletTransactions.create({ ...form, amount: Number(form.amount), status: 'posted' })
-      toast.success('Mouvement Wallet créé')
+      toast.success('Mouvement Wallet cree')
       setForm({ type: 'inflow', amount: '', source: '', reference: '' })
       fetchData()
     } catch {
-      toast.error('Impossible de créer le mouvement')
+      toast.error('Impossible de creer le mouvement')
     }
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Finance" title="Onekana Wallet" description="Suivez le portefeuille interne ONEKANA: encaissements, décaissements, références et solde calculé depuis l’API." />
+      <PageHeader
+        eyebrow="Finance"
+        title="Onekana Wallet"
+        description="Suivez le portefeuille interne ONEKANA: encaissements, decaissements, references et solde consolide."
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="border-primary/15 bg-[#0b0b0b] text-white">
-          <CardHeader><CardTitle className="flex items-center gap-2 text-lg font-black uppercase"><WalletIcon className="h-5 w-5 text-primary" /> Solde interne</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-black">{balance.toLocaleString()} USD</div><p className="mt-1 text-xs text-white/60">Calculé depuis les comptes ou mouvements API</p></CardContent>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg font-black uppercase">
+              <WalletIcon className="h-5 w-5 text-primary" />
+              Solde interne
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black">{balance.toLocaleString()} USD</div>
+            <p className="mt-1 text-xs text-white/60">Calcule depuis les comptes ou mouvements disponibles</p>
+          </CardContent>
         </Card>
+
         <Card className="border-primary/15 bg-white lg:col-span-2">
           <CardContent className="p-5">
             <form onSubmit={createTransaction} className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-end">
-              <div className="space-y-2"><Label>Type</Label><Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="inflow">Encaissement</SelectItem><SelectItem value="outflow">Décaissement</SelectItem></SelectContent></Select></div>
-              <div className="space-y-2"><Label>Montant</Label><Input type="number" min="0" step="0.01" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} required /></div>
-              <div className="space-y-2"><Label>Source</Label><Input value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Campagne, facture..." /></div>
-              <div className="space-y-2"><Label>Référence</Label><Input value={form.reference} onChange={(event) => setForm({ ...form, reference: event.target.value })} placeholder="REF-001" /></div>
-              <Button type="submit" className="gap-2"><Plus className="h-4 w-4" /> Ajouter</Button>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inflow">Encaissement</SelectItem>
+                    <SelectItem value="outflow">Decaissement</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Montant</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.amount}
+                  onChange={(event) => setForm({ ...form, amount: event.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Source</Label>
+                <Input
+                  value={form.source}
+                  onChange={(event) => setForm({ ...form, source: event.target.value })}
+                  placeholder="Campagne, facture..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Reference</Label>
+                <Input
+                  value={form.reference}
+                  onChange={(event) => setForm({ ...form, reference: event.target.value })}
+                  placeholder="REF-001"
+                />
+              </div>
+              <Button type="submit" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter
+              </Button>
             </form>
           </CardContent>
         </Card>
@@ -82,10 +133,40 @@ export default function Wallet() {
 
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
-          {error ? <div className="p-6"><EmptyState title="Donnees indisponibles" description="Les mouvements du portefeuille seront affiches des qu ils seront disponibles." /></div> :
-            loading ? <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div> :
-            transactions.length === 0 ? <div className="p-6"><EmptyState title="Aucun mouvement" description="Aucun mouvement Wallet n est encore disponible." /></div> :
-            <Table><TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Type</TableHead><TableHead>Source</TableHead><TableHead>Référence</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader><TableBody>{transactions.map((transaction) => <TableRow key={transaction.id}><TableCell>{transaction.date || transaction.createdAt || 'N/A'}</TableCell><TableCell>{transaction.type}</TableCell><TableCell>{transaction.source || 'N/A'}</TableCell><TableCell>{transaction.reference || 'N/A'}</TableCell><TableCell className="text-right">{Number(transaction.amount ?? transaction.montant ?? 0).toLocaleString()} USD</TableCell></TableRow>)}</TableBody></Table>}
+          {error ? (
+            <div className="p-6">
+              <EmptyState title="Donnees indisponibles" description="Les mouvements du portefeuille seront affiches des qu'ils seront disponibles." />
+            </div>
+          ) : loading ? (
+            <div className="p-6 text-center text-sm text-muted-foreground">Chargement...</div>
+          ) : transactions.length === 0 ? (
+            <div className="p-6">
+              <EmptyState title="Aucun mouvement" description="Aucun mouvement Wallet n'est encore disponible." />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead className="text-right">Montant</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell>{transaction.date || transaction.createdAt || 'N/A'}</TableCell>
+                    <TableCell>{transaction.type}</TableCell>
+                    <TableCell>{transaction.source || 'N/A'}</TableCell>
+                    <TableCell>{transaction.reference || 'N/A'}</TableCell>
+                    <TableCell className="text-right">{Number(transaction.amount ?? transaction.montant ?? 0).toLocaleString()} USD</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

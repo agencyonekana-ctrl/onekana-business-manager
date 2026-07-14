@@ -36,9 +36,9 @@ export function ProtectedRoute({ children, ...requirement }: ProtectedRouteProps
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <LockKeyhole className="h-6 w-6" />
           </div>
-          <h2 className="text-xl font-black uppercase">Acces non autorise</h2>
+          <h2 className="text-xl font-black uppercase">Accès non autorisé</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Vos droits ne permettent pas d ouvrir cette page. Contactez un administrateur si vous pensez qu il s agit d une erreur.
+            Vos droits ne permettent pas d’ouvrir cette page. Contactez un administrateur si vous pensez qu’il s’agit d’une erreur.
           </p>
         </CardContent>
       </Card>

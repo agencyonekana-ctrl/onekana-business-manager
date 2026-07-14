@@ -35,6 +35,7 @@ interface Document {
   employeeId: string
   type: string
   fileUrl: string
+  fileId?: string
   createdAt: string
 }
 
@@ -91,7 +92,7 @@ export default function Documents() {
       // 1. Upload to storage
       const file = formData.file
       const path = `documents/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`
-      const { publicUrl } = await dataClient.storage.upload(file, path)
+      const { publicUrl, fileId } = await dataClient.storage.upload(file, path)
 
       // 2. Save metadata to DB
       await dataClient.db.documents.create({
@@ -99,6 +100,7 @@ export default function Documents() {
         employeeId: formData.employeeId,
         type: formData.type,
         fileUrl: publicUrl,
+        fileId,
         createdAt: new Date().toISOString()
       })
 
@@ -123,6 +125,25 @@ export default function Documents() {
       fetchData()
     } catch (error) {
       toast.error('Erreur lors de la suppression')
+    }
+  }
+
+  async function handleDownload(document: Document) {
+    if (!document.fileId) {
+      toast.error('Ce document doit etre reimporte dans le stockage securise.')
+      return
+    }
+
+    try {
+      const blob = await dataClient.storage.download(document.fileId)
+      const url = URL.createObjectURL(blob)
+      const link = window.document.createElement('a')
+      link.href = url
+      link.download = document.name
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Document temporairement indisponible')
     }
   }
 
@@ -284,7 +305,7 @@ export default function Documents() {
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8 text-primary"
-                      onClick={() => window.open(doc.fileUrl, '_blank')}
+                      onClick={() => handleDownload(doc)}
                     >
                       <Download className="w-4 h-4" />
                     </Button>

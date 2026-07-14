@@ -20,10 +20,3 @@ export interface Emplacement {
   supportId: string
   status: string
 }
-
-export interface Asset {
-  id: string
-  name: string
-  fileUrl: string
-  type: string
-}

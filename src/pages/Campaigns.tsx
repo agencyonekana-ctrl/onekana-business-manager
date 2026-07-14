@@ -1,40 +1,32 @@
-import { useState, useEffect } from 'react'
-import { dataClient } from '../lib/data-client'
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '../components/ui/table'
-import { Button } from '../components/ui/button'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogFooter
-} from '../components/ui/dialog'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '../components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
-import { Plus, Megaphone, Trash2, Eye, Calculator, Calendar as CalendarIcon, List, Pencil } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
-import { toast } from 'react-hot-toast'
-import { format, addDays, startOfToday, isWithinInterval, parseISO } from 'date-fns'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { addDays, format, startOfToday } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import {
+  CalendarClock,
+  Eye,
+  FileText,
+  Filter,
+  MapPin,
+  Megaphone,
+  ReceiptText,
+  Search,
+  ShieldCheck,
+} from 'lucide-react'
+import { agencyApi } from '../services/agency-api'
+import { dataClient } from '../lib/data-client'
 import { PageHeader } from '../components/app/PageHeader'
+import { EmptyState } from '../components/app/EmptyState'
+import { StatusBadge } from '../components/app/StatusBadge'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 
-interface Campaign {
+type AgencyCampaign = Record<string, any>
+
+type InternalCampaign = {
   id: string
   name: string
   clientName: string
@@ -43,59 +35,42 @@ interface Campaign {
   status: string
 }
 
-interface CampaignLine {
+type CampaignLine = {
   id: string
   campaignId: string
   emplacementId: string
-  assetId?: string
-  totalPrice: number
+  totalPrice?: number
 }
 
-interface Emplacement {
+type Emplacement = {
   id: string
   name: string
-  supportId: string
-  status: string
+  status?: string
 }
 
-interface Support {
-  id: string
-  name: string
-  type: string
-}
+const statusFilters = [
+  { value: 'all', label: 'Tous les statuts' },
+  { value: 'pending', label: 'A verifier' },
+  { value: 'active', label: 'En cours' },
+  { value: 'completed', label: 'Terminees' },
+  { value: 'archived', label: 'Archivees' },
+]
 
-interface PricingRule {
-  id: string
-  supportType: string
-  basePrice: number
-  coefficient: number
-}
-
-interface Asset {
-  id: string
-  name: string
-  type: string
-}
+const pendingStatus = ['new', 'nouveau', 'pending', 'en_attente', 'draft', 'verification', 'a_verifier', 'submitted']
+const activeStatus = ['active', 'en_cours', 'ongoing', 'validated', 'validee', 'running']
+const completedStatus = ['done', 'completed', 'terminee', 'finished', 'closed']
+const archivedStatus = ['archived', 'archivee', 'inactive']
 
 export default function Campaigns() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
-  const [emplacements, setEmplacements] = useState<Emplacement[]>([])
-  const [supports, setSupports] = useState<Support[]>([])
-  const [pricingRules, setPricingRules] = useState<PricingRule[]>([])
-  const [assets, setAssets] = useState<Asset[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
+  const [agencyCampaigns, setAgencyCampaigns] = useState<AgencyCampaign[]>([])
+  const [internalCampaigns, setInternalCampaigns] = useState<InternalCampaign[]>([])
   const [campaignLines, setCampaignLines] = useState<CampaignLine[]>([])
-  const [allLines, setAllLines] = useState<CampaignLine[]>([])
-  const [allCampaigns, setAllCampaigns] = useState<Campaign[]>([])
-
-  // Dialog States
-  const [isCampaignDialogOpen, setIsCampaignDialogOpen] = useState(false)
-  const [isLineDialogOpen, setIsLineDialogOpen] = useState(false)
-  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
-
-  const [campaignForm, setCampaignForm] = useState({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
-  const [lineForm, setLineForm] = useState({ emplacementId: '', assetId: '', totalPrice: 0 })
+  const [emplacements, setEmplacements] = useState<Emplacement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [agencyUnavailable, setAgencyUnavailable] = useState(false)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -104,401 +79,397 @@ export default function Campaigns() {
   async function fetchData() {
     setLoading(true)
     try {
-      const [cList, eList, supList, pList, aList, lList] = await Promise.all([
-        dataClient.db.oohCampaigns.list(),
-        dataClient.db.oohEmplacements.list(),
-        dataClient.db.oohSupports.list(),
-        dataClient.db.oohPricingRules.list(),
-        dataClient.db.oohAssets.list(),
-        dataClient.db.oohCampaignLines.list()
+      let received: AgencyCampaign[] = []
+      try {
+        received = await agencyApi.campaigns.list<AgencyCampaign>()
+        setAgencyUnavailable(false)
+      } catch {
+        setAgencyUnavailable(true)
+      }
+
+      const [localCampaigns, lines, oohEmplacements] = await Promise.all([
+        dataClient.db.oohCampaigns.list().catch(() => []),
+        dataClient.db.oohCampaignLines.list().catch(() => []),
+        dataClient.db.oohEmplacements.list().catch(() => []),
       ])
-      setCampaigns(cList as Campaign[])
-      setAllCampaigns(cList as Campaign[])
-      setEmplacements(eList as Emplacement[])
-      setSupports(supList as Support[])
-      setPricingRules(pList as PricingRule[])
-      setAssets(aList as Asset[])
-      setAllLines(lList as CampaignLine[])
-    } catch (error) {
-      toast.error('Erreur lors du chargement des campagnes')
+
+      setAgencyCampaigns(received)
+      setInternalCampaigns(localCampaigns as InternalCampaign[])
+      setCampaignLines(lines as CampaignLine[])
+      setEmplacements(oohEmplacements as Emplacement[])
     } finally {
       setLoading(false)
     }
   }
 
-  async function fetchLines(campaignId: string) {
-    try {
-      const lines = await dataClient.db.oohCampaignLines.list({ where: { campaignId } })
-      setCampaignLines(lines as CampaignLine[])
-    } catch (error) {
-      toast.error('Erreur lors du chargement des lignes')
-    }
-  }
+  const filteredCampaigns = useMemo(() => {
+    const query = search.trim().toLowerCase()
 
-  function openCampaignDialog(campaign?: Campaign) {
-    setEditingCampaign(campaign || null)
-    setCampaignForm(campaign ? {
-      name: campaign.name,
-      clientName: campaign.clientName,
-      startDate: campaign.startDate,
-      endDate: campaign.endDate,
-      status: campaign.status || 'draft',
-    } : { name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
-    setIsCampaignDialogOpen(true)
-  }
+    return agencyCampaigns.filter((campaign) => {
+      const haystack = [
+        campaignName(campaign),
+        campaignClient(campaign),
+        campaignStatusLabel(campaign),
+        campaignNeed(campaign),
+      ].join(' ').toLowerCase()
 
-  function closeCampaignDialog() {
-    setIsCampaignDialogOpen(false)
-    setEditingCampaign(null)
-    setCampaignForm({ name: '', clientName: '', startDate: '', endDate: '', status: 'draft' })
-  }
+      const matchesSearch = !query || haystack.includes(query)
+      const matchesStatus = statusFilter === 'all' || statusBucket(campaign) === statusFilter
 
-  async function handleCampaignSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    try {
-      if (editingCampaign) {
-        await dataClient.db.oohCampaigns.update(editingCampaign.id, campaignForm)
-        toast.success('Campagne modifiee')
-        setSelectedCampaign({ ...editingCampaign, ...campaignForm })
-      } else {
-        await dataClient.db.oohCampaigns.create(campaignForm)
-        toast.success('Campagne creee')
-      }
-      closeCampaignDialog()
-      fetchData()
-    } catch (error) {
-      toast.error('Erreur lors de l enregistrement')
-    }
-  }
+      return matchesSearch && matchesStatus
+    })
+  }, [agencyCampaigns, search, statusFilter])
 
-  async function handleCampaignDelete(campaign: Campaign) {
-    if (!confirm(`Supprimer la campagne "${campaign.name}" et ses lignes de vente ?`)) return
-    try {
-      const lines = await dataClient.db.oohCampaignLines.list<CampaignLine>({ where: { campaignId: campaign.id } })
-      await Promise.all(lines.map((line) => dataClient.db.oohCampaignLines.delete(line.id)))
-      await dataClient.db.oohCampaigns.delete(campaign.id)
-      toast.success('Campagne supprimee')
-      if (selectedCampaign?.id === campaign.id) {
-        setSelectedCampaign(null)
-        setCampaignLines([])
-      }
-      fetchData()
-    } catch {
-      toast.error('Erreur lors de la suppression')
-    }
-  }
-
-  async function handleLineSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedCampaign) return
-    
-    try {
-      // Check for overlap
-      const existingLines = await dataClient.db.oohCampaignLines.list({
-        where: { emplacementId: lineForm.emplacementId }
-      })
-      
-      const campaignsLinked = await Promise.all(
-        (existingLines as CampaignLine[]).map(l => dataClient.db.oohCampaigns.get(l.campaignId))
-      )
-      
-      const overlap = campaignsLinked.some((c: any) => {
-        if (!c) return false
-        return (
-          selectedCampaign.startDate <= c.endDate && 
-          selectedCampaign.endDate >= c.startDate
-        )
-      })
-
-      if (overlap) {
-        toast.error('Cet emplacement est déjà réservé sur cette période.')
-        return
-      }
-
-      await dataClient.db.oohCampaignLines.create({
-        ...lineForm,
-        campaignId: selectedCampaign.id,
-        assetId: lineForm.assetId || null
-      })
-      
-      toast.success('Ligne de vente ajoutée')
-      setIsLineDialogOpen(false)
-      setLineForm({ emplacementId: '', assetId: '', totalPrice: 0 })
-      fetchLines(selectedCampaign.id)
-      fetchData() // Refresh emplacements list
-    } catch (error) {
-      toast.error('Erreur lors de l\'ajout')
-    }
-  }
-
-  // Auto-calculate price when emplacement is selected
-  useEffect(() => {
-    if (lineForm.emplacementId) {
-      const emp = emplacements.find(e => e.id === lineForm.emplacementId)
-      if (emp) {
-        const support = supports.find(s => s.id === emp.supportId)
-        if (support) {
-          const rule = pricingRules.find(r => r.supportType === support.type)
-          if (rule) {
-            setLineForm(prev => ({ ...prev, totalPrice: rule.basePrice * rule.coefficient }))
-          }
-        }
-      }
-    }
-  }, [lineForm.emplacementId, emplacements, supports, pricingRules])
+  const selectedCampaign = useMemo(() => {
+    return filteredCampaigns.find((campaign) => campaignId(campaign) === selectedId) ?? filteredCampaigns[0] ?? null
+  }, [filteredCampaigns, selectedId])
 
   const today = startOfToday()
-  const timelineDays = Array.from({ length: 14 }).map((_, i) => addDays(today, i))
+  const todayString = format(today, 'yyyy-MM-dd')
+  const timelineDays = Array.from({ length: 14 }).map((_, index) => addDays(today, index))
+  const activeInternalCampaigns = internalCampaigns.filter(
+    (campaign) => campaign.startDate <= todayString && campaign.endDate >= todayString
+  )
+  const occupiedIds = new Set(
+    campaignLines
+      .filter((line) => activeInternalCampaigns.some((campaign) => campaign.id === line.campaignId))
+      .map((line) => line.emplacementId)
+  )
+
+  const stats = [
+    { label: 'Campagnes recues', value: agencyCampaigns.length, icon: Megaphone },
+    { label: 'A verifier', value: agencyCampaigns.filter((campaign) => statusBucket(campaign) === 'pending').length, icon: ShieldCheck },
+    { label: 'En cours', value: agencyCampaigns.filter((campaign) => statusBucket(campaign) === 'active').length, icon: CalendarClock },
+    { label: 'Disponibilites OOH', value: Math.max(0, emplacements.length - occupiedIds.size), icon: MapPin },
+  ]
 
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Ventes OOH"
-        title="Campagnes"
-        description="Préparez les campagnes clients, réservez les emplacements et vérifiez l’occupation sur la timeline."
-        action={
-        <>
-        <div className="hidden">
-          <h2 className="text-3xl font-bold tracking-tight">Campagnes & Réservations</h2>
-          <p className="text-muted-foreground">Gérez les réservations d'emplacements et les lignes de vente par campagne.</p>
-        </div>
-        <Dialog open={isCampaignDialogOpen} onOpenChange={(open) => open ? setIsCampaignDialogOpen(true) : closeCampaignDialog()}>
-          <DialogTrigger asChild>
-            <Button className="gap-2" onClick={() => openCampaignDialog()}><Plus className="w-4 h-4" /> Nouvelle Campagne</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>{editingCampaign ? 'Modifier la campagne' : 'Creer une campagne'}</DialogTitle></DialogHeader>
-            <form onSubmit={handleCampaignSubmit} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <Label htmlFor="cname">Nom de la campagne</Label>
-                <Input id="cname" value={campaignForm.name} onChange={(e) => setCampaignForm({...campaignForm, name: e.target.value})} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client">Nom du client</Label>
-                <Input id="client" value={campaignForm.clientName} onChange={(e) => setCampaignForm({...campaignForm, clientName: e.target.value})} required />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start">Date de début</Label>
-                  <Input id="start" type="date" value={campaignForm.startDate} onChange={(e) => setCampaignForm({...campaignForm, startDate: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end">Date de fin</Label>
-                  <Input id="end" type="date" value={campaignForm.endDate} onChange={(e) => setCampaignForm({...campaignForm, endDate: e.target.value})} required />
-                </div>
-              </div>
-              <DialogFooter><Button type="submit" className="w-full">Enregistrer</Button></DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-        </>
-        }
+        eyebrow="Activite recue"
+        title="Campagnes recues"
+        description="Consultez, filtrez et controlez les campagnes transmises aux equipes ONEKANA. Cette page sert au suivi administratif, pas a la creation de campagnes."
       />
 
-      <Tabs defaultValue="list" className="w-full" data-tour="campaigns-workspace">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-          <TabsTrigger value="list" className="gap-2"><List className="w-4 h-4" /> Liste des Campagnes</TabsTrigger>
-          <TabsTrigger value="timeline" className="gap-2"><CalendarIcon className="w-4 h-4" /> Vue Timeline</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="pt-4">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Campaign List */}
-            <Card className="lg:col-span-1 border-border/50">
-              <CardHeader>
-                <CardTitle>Liste des Campagnes</CardTitle>
-                <CardDescription>Sélectionnez une campagne pour voir ses lignes.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y border-t">
-                  {loading ? <div className="p-4 text-center">Chargement...</div> : 
-                    campaigns.map(c => (
-                      <div 
-                        key={c.id} 
-                        className={`w-full p-4 hover:bg-muted/50 transition-colors flex justify-between items-center gap-3 ${selectedCampaign?.id === c.id ? 'bg-primary/5 border-l-4 border-primary' : ''}`}
-                      >
-                        <button className="min-w-0 flex-1 text-left" onClick={() => { setSelectedCampaign(c); fetchLines(c.id); }}>
-                          <div className="space-y-1">
-                            <div className="font-semibold">{c.name}</div>
-                            <div className="text-xs text-muted-foreground">{c.clientName}</div>
-                          </div>
-                        </button>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openCampaignDialog(c)} aria-label="Modifier la campagne">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleCampaignDelete(c)} aria-label="Supprimer la campagne">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Eye className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Campaign Detail / Lines */}
-            <Card className="lg:col-span-2 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>{selectedCampaign ? `Lignes: ${selectedCampaign.name}` : 'Détails de la campagne'}</CardTitle>
-                  <CardDescription>Emplacements réservés et tarification.</CardDescription>
-                </div>
-                {selectedCampaign && (
-                  <Dialog open={isLineDialogOpen} onOpenChange={setIsLineDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="gap-2"><Plus className="w-4 h-4" /> Ajouter une ligne</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader><DialogTitle>Réserver un emplacement</DialogTitle></DialogHeader>
-                      <form onSubmit={handleLineSubmit} className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="lemp">Emplacement</Label>
-                          <Select value={lineForm.emplacementId} onValueChange={(v) => setLineForm({...lineForm, emplacementId: v})}>
-                            <SelectTrigger><SelectValue placeholder="Choisir un emplacement" /></SelectTrigger>
-                            <SelectContent>
-                              {emplacements.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          {lineForm.emplacementId && (
-                            <p className="text-xs text-muted-foreground italic">
-                              Type: {supports.find(s => s.id === emplacements.find(e => e.id === lineForm.emplacementId)?.supportId)?.type || 'Inconnu'}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lasset">Visuel (Asset)</Label>
-                          <Select value={lineForm.assetId} onValueChange={(v) => setLineForm({...lineForm, assetId: v})}>
-                            <SelectTrigger><SelectValue placeholder="Choisir un visuel" /></SelectTrigger>
-                            <SelectContent>
-                              {assets.map(a => <SelectItem key={a.id} value={a.id}>{a.name} ({a.type})</SelectItem>)}
-                              {assets.length === 0 && <SelectItem disabled value="none">Aucun asset disponible</SelectItem>}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="lprice">Prix Total (€)</Label>
-                          <div className="flex gap-2">
-                            <Input id="lprice" type="number" value={lineForm.totalPrice} onChange={(e) => setLineForm({...lineForm, totalPrice: parseFloat(e.target.value)})} required />
-                            <div className="flex items-center justify-center p-2 bg-muted rounded-md" title="Prix suggéré par le moteur de tarification">
-                              <Calculator className="w-4 h-4 text-muted-foreground" />
-                            </div>
-                          </div>
-                        </div>
-                        <DialogFooter><Button type="submit" className="w-full">Ajouter à la campagne</Button></DialogFooter>
-                      </form>
-                    </DialogContent>
-                  </Dialog>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!selectedCampaign ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground space-y-4">
-                    <Megaphone className="w-12 h-12 opacity-20" />
-                    <p>Sélectionnez une campagne pour voir ses lignes de vente.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Emplacement</TableHead>
-                        <TableHead>Visuel</TableHead>
-                        <TableHead className="text-right">Prix Total</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {campaignLines.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Aucune ligne pour cette campagne.</TableCell></TableRow> : 
-                        campaignLines.map(line => (
-                          <TableRow key={line.id}>
-                            <TableCell>{emplacements.find(e => e.id === line.emplacementId)?.name || 'Inconnu'}</TableCell>
-                            <TableCell>
-                              <span className="text-xs px-2 py-0.5 bg-muted rounded-full">
-                                {assets.find(a => a.id === line.assetId)?.name || 'Aucun'}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right font-mono">{line.totalPrice.toLocaleString()} €</TableCell>
-                            <TableCell className="text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="text-destructive" 
-                                onClick={async () => { 
-                                  await dataClient.db.oohCampaignLines.delete(line.id); 
-                                  fetchLines(selectedCampaign.id); 
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="timeline" className="pt-4">
-          <Card className="border-border/50 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Planning des Emplacements</CardTitle>
-              <CardDescription>Occupation visuelle sur les 14 prochains jours.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <div className="min-w-[800px]">
-                <div className="grid grid-cols-[200px_repeat(14,1fr)] border-b">
-                  <div className="p-3 bg-muted font-medium border-r">Emplacement</div>
-                  {timelineDays.map(day => (
-                    <div key={day.toISOString()} className="p-3 text-center bg-muted text-xs font-medium border-r last:border-r-0">
-                      <div className="uppercase opacity-50">{format(day, 'EEE', { locale: fr })}</div>
-                      <div>{format(day, 'dd/MM')}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="divide-y">
-                  {emplacements.map(emp => (
-                    <div key={emp.id} className="grid grid-cols-[200px_repeat(14,1fr)] h-12">
-                      <div className="p-3 text-sm font-medium border-r truncate">{emp.name}</div>
-                      {timelineDays.map(day => {
-                        const dayStr = format(day, 'yyyy-MM-dd')
-                        const line = allLines.find(l => {
-                          if (l.emplacementId !== emp.id) return false
-                          const camp = allCampaigns.find(c => c.id === l.campaignId)
-                          if (!camp) return false
-                          return dayStr >= camp.startDate && dayStr <= camp.endDate
-                        })
-                        const camp = line ? allCampaigns.find(c => c.id === line.campaignId) : null
-
-                        return (
-                          <div 
-                            key={day.toISOString()} 
-                            className={`border-r last:border-r-0 flex items-center justify-center p-0.5`}
-                          >
-                            {camp && (
-                              <div 
-                                className="w-full h-full rounded bg-primary/20 border border-primary/40 flex items-center justify-center overflow-hidden"
-                                title={`${camp.name} - ${camp.clientName}`}
-                              >
-                                <span className="text-[10px] truncate px-1 text-primary font-bold">
-                                  {camp.clientName.substring(0, 3)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} className="border-border bg-white">
+            <CardContent className="flex items-center justify-between gap-4 p-5">
+              <div>
+                <span className="text-2xl font-black">{stat.value}</span>
+                <span className="mt-1 block text-xs font-black uppercase text-muted-foreground">{stat.label}</span>
               </div>
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <stat.icon className="h-5 w-5" />
+              </span>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        ))}
+      </section>
+
+      <Card className="border-border bg-white" data-tour="campaigns-workspace">
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle className="text-base font-black uppercase">Suivi des campagnes</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recherchez une campagne, verifiez son etat et ouvrez les modules utiles pour les controles.
+              </p>
+            </div>
+            <Button asChild variant="outline" className="gap-2">
+              <Link to="/inventory">
+                <MapPin className="h-4 w-4" />
+                Controler les disponibilites
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Rechercher par client, campagne, besoin..."
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusFilters.map((filter) => (
+                  <SelectItem key={filter.value} value={filter.value}>{filter.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {loading ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">Chargement des campagnes...</div>
+          ) : filteredCampaigns.length === 0 ? (
+            <EmptyState
+              title={agencyUnavailable ? 'Connexion Agency indisponible' : 'Aucune campagne a afficher'}
+              description={agencyUnavailable
+                ? 'Les campagnes seront disponibles ici apres validation de la connexion Agency.'
+                : 'Les campagnes recues apparaitront ici des qu elles seront disponibles.'}
+            />
+          ) : (
+            <div className="grid gap-5 xl:grid-cols-[1.45fr_0.75fr]">
+              <div className="overflow-hidden rounded-2xl border border-border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead>Campagne</TableHead>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Periode</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCampaigns.map((campaign) => {
+                      const id = campaignId(campaign)
+                      const selected = selectedCampaign && campaignId(selectedCampaign) === id
+
+                      return (
+                        <TableRow
+                          key={id}
+                          className={selected ? 'bg-primary/5' : ''}
+                          onClick={() => setSelectedId(id)}
+                        >
+                          <TableCell>
+                            <div className="font-bold">{campaignName(campaign)}</div>
+                            <div className="mt-1 max-w-xs truncate text-xs text-muted-foreground">{campaignNeed(campaign)}</div>
+                          </TableCell>
+                          <TableCell>{campaignClient(campaign)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{campaignPeriod(campaign)}</TableCell>
+                          <TableCell><CampaignStatusBadge campaign={campaign} /></TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setSelectedId(id)}>
+                              <Eye className="h-4 w-4" />
+                              Voir
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <CampaignDetail campaign={selectedCampaign} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="overflow-hidden border-border bg-white">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base font-black uppercase">
+            <CalendarClock className="h-5 w-5 text-primary" />
+            Controle visuel des emplacements
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Lecture des occupations connues sur les 14 prochains jours.
+          </p>
+        </CardHeader>
+        <CardContent className="overflow-x-auto p-0">
+          {emplacements.length === 0 ? (
+            <div className="p-6">
+              <EmptyState
+                title="Aucun emplacement"
+                description="Les emplacements controles apparaitront ici des qu'ils seront disponibles."
+              />
+            </div>
+          ) : (
+            <div className="min-w-[860px]">
+              <div className="grid grid-cols-[220px_repeat(14,1fr)] border-b border-border">
+                <div className="border-r border-border bg-muted/40 p-3 text-sm font-black">Emplacement</div>
+                {timelineDays.map((day) => (
+                  <div key={day.toISOString()} className="border-r border-border bg-muted/40 p-3 text-center text-xs font-bold last:border-r-0">
+                    <div className="uppercase text-muted-foreground">{format(day, 'EEE', { locale: fr })}</div>
+                    <div>{format(day, 'dd/MM')}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="divide-y divide-border">
+                {emplacements.map((emplacement) => (
+                  <div key={emplacement.id} className="grid h-12 grid-cols-[220px_repeat(14,1fr)]">
+                    <div className="truncate border-r border-border p-3 text-sm font-semibold">{emplacement.name}</div>
+                    {timelineDays.map((day) => {
+                      const dayString = format(day, 'yyyy-MM-dd')
+                      const line = campaignLines.find((item) => {
+                        if (item.emplacementId !== emplacement.id) return false
+                        const campaign = internalCampaigns.find((row) => row.id === item.campaignId)
+                        if (!campaign) return false
+                        return dayString >= campaign.startDate && dayString <= campaign.endDate
+                      })
+                      const campaign = line ? internalCampaigns.find((row) => row.id === line.campaignId) : null
+
+                      return (
+                        <div key={day.toISOString()} className="flex items-center justify-center border-r border-border p-1 last:border-r-0">
+                          {campaign ? (
+                            <div
+                              className="h-full w-full rounded-lg border border-primary/25 bg-primary/10 px-1 text-center text-[10px] font-black leading-8 text-primary"
+                              title={`${campaign.name} - ${campaign.clientName}`}
+                            >
+                              {campaign.clientName?.slice(0, 3) || 'OOH'}
+                            </div>
+                          ) : null}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
+}
+
+function CampaignDetail({ campaign }: { campaign: AgencyCampaign | null }) {
+  if (!campaign) {
+    return (
+      <EmptyState
+        title="Aucun detail selectionne"
+        description="Selectionnez une campagne pour afficher les informations de controle."
+      />
+    )
+  }
+
+  return (
+    <aside className="rounded-2xl border border-border bg-[#fbfbfb] p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-black uppercase">{campaignName(campaign)}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{campaignClient(campaign)}</p>
+        </div>
+        <CampaignStatusBadge campaign={campaign} />
+      </div>
+
+      <div className="mt-5 space-y-4 text-sm">
+        <InfoLine label="Periode" value={campaignPeriod(campaign)} />
+        <InfoLine label="Besoin" value={campaignNeed(campaign)} />
+        <InfoLine label="Budget" value={campaignBudget(campaign)} />
+        <InfoLine label="Reference" value={campaignReference(campaign)} />
+      </div>
+
+      <div className="mt-6 grid gap-2">
+        <Button asChild variant="outline" className="justify-start gap-2">
+          <Link to="/inventory">
+            <MapPin className="h-4 w-4" />
+            Controler la disponibilite
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start gap-2">
+          <Link to="/documents">
+            <FileText className="h-4 w-4" />
+            Ouvrir les documents
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="justify-start gap-2">
+          <Link to="/invoices">
+            <ReceiptText className="h-4 w-4" />
+            Suivre les paiements
+          </Link>
+        </Button>
+      </div>
+    </aside>
+  )
+}
+
+function InfoLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="block text-[11px] font-black uppercase text-muted-foreground">{label}</span>
+      <span className="mt-1 block font-semibold text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function CampaignStatusBadge({ campaign }: { campaign: AgencyCampaign }) {
+  const bucket = statusBucket(campaign)
+  const tone = bucket === 'pending' ? 'red' : bucket === 'active' ? 'dark' : 'neutral'
+
+  return <StatusBadge tone={tone}>{campaignStatusLabel(campaign)}</StatusBadge>
+}
+
+function campaignId(campaign: AgencyCampaign) {
+  return String(campaign.id ?? campaign.campaign_id ?? campaign.uuid ?? campaign.reference ?? JSON.stringify(campaign))
+}
+
+function campaignName(campaign: AgencyCampaign) {
+  return pickString(campaign, ['name', 'campaign_name', 'title', 'nom', 'label'], 'Campagne sans nom')
+}
+
+function campaignClient(campaign: AgencyCampaign) {
+  return pickString(campaign, ['clientName', 'client_name', 'company_name', 'company', 'customer_name', 'entreprise'], 'Client non renseigne')
+}
+
+function campaignNeed(campaign: AgencyCampaign) {
+  return pickString(campaign, ['need', 'besoin', 'objective', 'objectif', 'description', 'message'], 'Besoin non renseigne')
+}
+
+function campaignStatusLabel(campaign: AgencyCampaign) {
+  return pickString(campaign, ['status', 'etat', 'state', 'workflow_status'], 'A verifier')
+}
+
+function campaignReference(campaign: AgencyCampaign) {
+  return pickString(campaign, ['reference', 'ref', 'campaign_code', 'code'], 'Non renseignee')
+}
+
+function campaignBudget(campaign: AgencyCampaign) {
+  const value = campaign.budget ?? campaign.amount ?? campaign.total ?? campaign.price ?? campaign.montant
+  const numeric = Number(value)
+
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return `${numeric.toLocaleString()} USD`
+  }
+
+  return 'Non renseigne'
+}
+
+function campaignPeriod(campaign: AgencyCampaign) {
+  const start = pickString(campaign, ['startDate', 'start_date', 'date_debut', 'from'], '')
+  const end = pickString(campaign, ['endDate', 'end_date', 'date_fin', 'to'], '')
+
+  if (!start && !end) return 'Periode non renseignee'
+  if (start && end) return `${formatDate(start)} - ${formatDate(end)}`
+  return formatDate(start || end)
+}
+
+function statusBucket(campaign: AgencyCampaign) {
+  const status = campaignStatusLabel(campaign).trim().toLowerCase()
+
+  if (pendingStatus.includes(status)) return 'pending'
+  if (activeStatus.includes(status)) return 'active'
+  if (completedStatus.includes(status)) return 'completed'
+  if (archivedStatus.includes(status)) return 'archived'
+
+  return 'pending'
+}
+
+function pickString(source: Record<string, any>, keys: string[], fallback: string) {
+  for (const key of keys) {
+    const value = source[key]
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return String(value)
+    }
+  }
+
+  return fallback
+}
+
+function formatDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('fr-FR')
 }

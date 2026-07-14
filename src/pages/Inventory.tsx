@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react'
 import { dataClient } from '../lib/data-client'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs'
-import { MapPin, Monitor, Map as MapIcon, Image as ImageIcon } from 'lucide-react'
+import { MapPin, Monitor, Map as MapIcon } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { Site, Support, Emplacement, Asset } from '../features/inventory/types'
+import { Site, Support, Emplacement } from '../features/inventory/types'
 import { SitesTab } from '../features/inventory/components/SitesTab'
 import { SupportsTab } from '../features/inventory/components/SupportsTab'
 import { EmplacementsTab } from '../features/inventory/components/EmplacementsTab'
-import { AssetsTab } from '../features/inventory/components/AssetsTab'
 import { PageHeader } from '../components/app/PageHeader'
+import { mediaApi } from '../services/media-api'
+import type { EntityMedia } from '../types/media'
 
 export default function Inventory() {
   const [sites, setSites] = useState<Site[]>([])
   const [supports, setSupports] = useState<Support[]>([])
   const [emplacements, setEmplacements] = useState<Emplacement[]>([])
-  const [assets, setAssets] = useState<Asset[]>([])
+  const [media, setMedia] = useState<EntityMedia[]>([])
   const [allLines, setAllLines] = useState<any[]>([])
   const [allCampaigns, setAllCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,18 +27,20 @@ export default function Inventory() {
   async function fetchData() {
     setLoading(true)
     try {
-      const [sList, supList, eList, aList, lList, cList] = await Promise.all([
+      const [sList, supList, eList, lList, cList, siteMedia, supportMedia, emplacementMedia] = await Promise.all([
         dataClient.db.oohSites.list(),
         dataClient.db.oohSupports.list(),
         dataClient.db.oohEmplacements.list(),
-        dataClient.db.oohAssets.list(),
         dataClient.db.oohCampaignLines.list(),
-        dataClient.db.oohCampaigns.list()
+        dataClient.db.oohCampaigns.list(),
+        mediaApi.list('ooh_site'),
+        mediaApi.list('ooh_support'),
+        mediaApi.list('ooh_emplacement'),
       ])
       setSites(sList as Site[])
       setSupports(supList as Support[])
       setEmplacements(eList as Emplacement[])
-      setAssets(aList as Asset[])
+      setMedia([...siteMedia, ...supportMedia, ...emplacementMedia])
       setAllLines(lList)
       setAllCampaigns(cList)
     } catch (error) {
@@ -47,28 +50,40 @@ export default function Inventory() {
     }
   }
 
+  async function refreshMedia() {
+    try {
+      const rows = await Promise.all([
+        mediaApi.list('ooh_site'),
+        mediaApi.list('ooh_support'),
+        mediaApi.list('ooh_emplacement'),
+      ])
+      setMedia(rows.flat())
+    } catch {
+      toast.error('Impossible d’actualiser les images')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Ventes OOH"
-        title="Inventaire publicitaire"
-        description="Gérez les sites, supports, emplacements réservables et visuels dans une seule page à onglets."
+        title="Inventaire OOH"
+        description="Contrôlez les sites, les formats de supports et les emplacements commercialisables de la régie ONEKANA."
       />
 
       <Tabs defaultValue="sites" className="w-full" data-tour="inventory-tabs">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[500px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[500px]">
           <TabsTrigger value="sites" className="gap-2"><MapPin className="w-4 h-4" /> Sites</TabsTrigger>
           <TabsTrigger value="supports" className="gap-2"><Monitor className="w-4 h-4" /> Supports</TabsTrigger>
           <TabsTrigger value="emplacements" className="gap-2"><MapIcon className="w-4 h-4" /> Emplacements</TabsTrigger>
-          <TabsTrigger value="assets" className="gap-2"><ImageIcon className="w-4 h-4" /> Assets</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sites">
-          <SitesTab sites={sites} loading={loading} onRefresh={fetchData} />
+          <SitesTab sites={sites} media={media.filter((item) => item.entityType === 'ooh_site')} loading={loading} onRefresh={fetchData} onMediaChanged={refreshMedia} />
         </TabsContent>
 
         <TabsContent value="supports">
-          <SupportsTab supports={supports} loading={loading} onRefresh={fetchData} />
+          <SupportsTab supports={supports} media={media.filter((item) => item.entityType === 'ooh_support')} loading={loading} onRefresh={fetchData} onMediaChanged={refreshMedia} />
         </TabsContent>
 
         <TabsContent value="emplacements">
@@ -78,13 +93,11 @@ export default function Inventory() {
             supports={supports} 
             allLines={allLines} 
             allCampaigns={allCampaigns} 
+            media={media.filter((item) => item.entityType === 'ooh_emplacement')}
             loading={loading} 
             onRefresh={fetchData} 
+            onMediaChanged={refreshMedia}
           />
-        </TabsContent>
-
-        <TabsContent value="assets">
-          <AssetsTab assets={assets} loading={loading} onRefresh={fetchData} />
         </TabsContent>
       </Tabs>
     </div>

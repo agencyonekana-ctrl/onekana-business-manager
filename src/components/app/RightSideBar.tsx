@@ -74,7 +74,7 @@ export function RightSideBar() {
           setOpen(true)
           setMinimized(false)
         }}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-[1.4rem] bg-[#111111] px-4 py-3 text-left text-white shadow-xl ring-1 ring-white/10"
+        className="assistant-launcher fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-[1.4rem] bg-[#111111] px-4 py-3 text-left text-white shadow-xl ring-1 ring-white/10 transition-[transform,box-shadow] duration-200 hover:-translate-y-px hover:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
         aria-label="Ouvrir les notifications ONEKANA"
       >
         <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/90 text-white">
@@ -93,7 +93,7 @@ export function RightSideBar() {
   }
 
   return (
-    <aside className={`fixed bottom-5 right-5 z-50 overflow-hidden rounded-[1.6rem] border border-black/10 bg-white shadow-2xl transition-all ${
+    <aside className={`assistant-panel fixed bottom-5 right-5 z-50 overflow-hidden rounded-[1.6rem] border border-black/10 bg-white shadow-2xl transition-[height,width,transform,opacity] duration-300 ease-out ${
       minimized ? 'h-[76px] w-[min(420px,calc(100vw-2rem))]' : 'h-[min(720px,calc(100vh-2.5rem))] w-[min(420px,calc(100vw-2rem))]'
     }`}>
       <div className="flex items-center justify-between bg-[#111111] px-5 py-4 text-white">

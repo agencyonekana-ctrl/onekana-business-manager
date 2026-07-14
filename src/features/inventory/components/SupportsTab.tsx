@@ -29,14 +29,19 @@ import {
 import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Support } from '../types'
+import type { EntityMedia } from '@/types/media'
+import { EntityMediaDialog } from '@/components/media/EntityMediaDialog'
+import { EntityThumbnail } from '@/components/media/EntityThumbnail'
 
 interface SupportsTabProps {
   supports: Support[]
+  media: EntityMedia[]
   loading: boolean
   onRefresh: () => void
+  onMediaChanged: () => void
 }
 
-export function SupportsTab({ supports, loading, onRefresh }: SupportsTabProps) {
+export function SupportsTab({ supports, media, loading, onRefresh, onMediaChanged }: SupportsTabProps) {
   const [search, setSearch] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingSupport, setEditingSupport] = useState<Support | null>(null)
@@ -131,10 +136,11 @@ export function SupportsTab({ supports, loading, onRefresh }: SupportsTabProps) 
             {loading ? <TableRow><TableCell colSpan={4} className="text-center">Chargement...</TableCell></TableRow> : 
               filteredSupports.map(sup => (
                 <TableRow key={sup.id}>
-                  <TableCell className="font-medium">{sup.name}</TableCell>
+                  <TableCell><div className="flex items-center gap-3"><EntityThumbnail media={media.find((item) => item.entityId === sup.id && item.isCover) || media.find((item) => item.entityId === sup.id)} alt={sup.name} /><span className="font-medium">{sup.name}</span></div></TableCell>
                   <TableCell>{sup.type}</TableCell>
                   <TableCell>{sup.dimensions}</TableCell>
                   <TableCell className="text-right space-x-2">
+                    <EntityMediaDialog entityType="ooh_support" entityId={sup.id} entityLabel={sup.name} onChanged={onMediaChanged} />
                     <Button variant="ghost" size="icon" onClick={() => { setEditingSupport(sup); setForm({ name: sup.name, type: sup.type, dimensions: sup.dimensions || '' }); setIsDialogOpen(true); }}><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(sup.id)}><Trash2 className="w-4 h-4" /></Button>
                   </TableCell>

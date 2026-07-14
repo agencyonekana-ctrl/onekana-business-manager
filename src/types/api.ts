@@ -25,4 +25,5 @@ export type ApiTable = {
 export type StorageUploadResult = {
   path: string
   publicUrl: string
+  fileId: string
 }

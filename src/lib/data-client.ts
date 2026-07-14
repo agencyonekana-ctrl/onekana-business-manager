@@ -1,6 +1,7 @@
 import { remoteApi } from '../services/remote-api'
 import type { ApiTable, QueryOptions, StorageUploadResult } from '../types/api'
-import { getAuthToken } from './session-storage'
+import { API_ENDPOINTS } from '../config/api'
+import { apiDownload, apiFetch, unwrapApiData } from '../services/api-client'
 
 type RemoteResource = {
   list?: () => Promise<any[]>
@@ -78,24 +79,19 @@ export const dataClient = {
       formData.append('file', file)
       formData.append('path', path)
 
-      const token = getAuthToken()
-      const response = await fetch(`${remoteApi.baseUrl}/uploads`, {
+      const data = unwrapApiData<Record<string, string>>(await apiFetch(API_ENDPOINTS.files, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Upload API error ${response.status}`)
-      }
-
-      const payload = await response.json()
-      const data = payload?.data ?? payload
+      }))
 
       return {
         path: data.path ?? path,
-        publicUrl: data.publicUrl ?? data.public_url ?? data.url,
+        fileId: String(data.fileId ?? data.id),
+        publicUrl: data.downloadUrl,
       }
+    },
+    download(fileId: string) {
+      return apiDownload(`${API_ENDPOINTS.files}/${fileId}`)
     },
   },
 }

@@ -1,4 +1,10 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const configuredApiUrl = import.meta.env.VITE_API_BASE_URL?.trim()
+
+if (import.meta.env.PROD && !configuredApiUrl) {
+  throw new Error('VITE_API_BASE_URL must be configured for production builds.')
+}
+
+export const API_BASE_URL = (configuredApiUrl || 'http://127.0.0.1:8000/api').replace(/\/$/, '')
 
 const endpoint = (path: string) => `${API_BASE_URL}${path}`
 
@@ -6,6 +12,7 @@ export const API_ENDPOINTS = {
   auth: {
     login: endpoint('/auth/login'),
     logout: endpoint('/auth/logout'),
+    refresh: endpoint('/auth/refresh'),
     me: endpoint('/auth/me'),
     register: endpoint('/auth/register'),
   },
@@ -24,7 +31,6 @@ export const API_ENDPOINTS = {
   oohSites: endpoint('/ooh/sites'),
   oohSupports: endpoint('/ooh/supports'),
   oohEmplacements: endpoint('/ooh/emplacements'),
-  oohAssets: endpoint('/ooh/assets'),
   oohPricingRules: endpoint('/ooh/pricing-rules'),
   oohCampaigns: endpoint('/ooh/campaigns'),
   oohCampaignLines: endpoint('/ooh/campaign-lines'),
@@ -52,6 +58,20 @@ export const API_ENDPOINTS = {
   walletTransactions: endpoint('/wallet/transactions'),
   invoices: endpoint('/invoices'),
   payments: endpoint('/payments'),
+  geographicReviews: endpoint('/geographic-reviews'),
+  media: endpoint('/media'),
+  files: endpoint('/files'),
+
+  agency: {
+    profile: endpoint('/agency/profile'),
+    summary: endpoint('/agency/summary'),
+    users: endpoint('/agency/users'),
+    campaigns: endpoint('/agency/campaigns'),
+    contacts: endpoint('/agency/contacts'),
+    communes: endpoint('/agency/geographic/communes'),
+    pointsChauds: endpoint('/agency/geographic/points-chauds'),
+    trajets: endpoint('/agency/geographic/trajets'),
+  },
 }
 
 export function resourceEndpoint(resourceUrl: string, id?: string | number) {

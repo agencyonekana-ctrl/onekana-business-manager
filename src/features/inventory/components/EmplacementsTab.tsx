@@ -29,6 +29,9 @@ import {
 import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Site, Support, Emplacement } from '../types'
+import type { EntityMedia } from '@/types/media'
+import { EntityMediaDialog } from '@/components/media/EntityMediaDialog'
+import { EntityThumbnail } from '@/components/media/EntityThumbnail'
 
 interface EmplacementsTabProps {
   emplacements: Emplacement[]
@@ -36,8 +39,10 @@ interface EmplacementsTabProps {
   supports: Support[]
   allLines: any[]
   allCampaigns: any[]
+  media: EntityMedia[]
   loading: boolean
   onRefresh: () => void
+  onMediaChanged: () => void
 }
 
 export function EmplacementsTab({ 
@@ -46,8 +51,10 @@ export function EmplacementsTab({
   supports, 
   allLines, 
   allCampaigns, 
+  media,
   loading, 
-  onRefresh 
+  onRefresh,
+  onMediaChanged,
 }: EmplacementsTabProps) {
   const [search, setSearch] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -165,7 +172,7 @@ export function EmplacementsTab({
 
                 return (
                   <TableRow key={emp.id}>
-                    <TableCell className="font-medium">{emp.name}</TableCell>
+                    <TableCell><div className="flex items-center gap-3"><EntityThumbnail media={media.find((item) => item.entityId === emp.id && item.isCover) || media.find((item) => item.entityId === emp.id)} alt={emp.name} /><span className="font-medium">{emp.name}</span></div></TableCell>
                     <TableCell>{sites.find(s => s.id === emp.siteId)?.name || 'N/A'}</TableCell>
                     <TableCell>{supports.find(s => s.id === emp.supportId)?.name || 'N/A'}</TableCell>
                     <TableCell>
@@ -187,6 +194,7 @@ export function EmplacementsTab({
                       </span>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                      <EntityMediaDialog entityType="ooh_emplacement" entityId={emp.id} entityLabel={emp.name} onChanged={onMediaChanged} />
                       <Button variant="ghost" size="icon" onClick={() => { setEditingEmplacement(emp); setForm(emp); setIsDialogOpen(true); }}><Pencil className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(emp.id)}><Trash2 className="w-4 h-4" /></Button>
                     </TableCell>

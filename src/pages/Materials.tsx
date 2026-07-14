@@ -28,8 +28,13 @@ import {
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import { CategoryManager } from '../components/app/CategoryManager'
-import { Plus, Search, Pencil, Trash2, Package, User } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, User } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { PageHeader } from '../components/app/PageHeader'
+import { EntityMediaDialog } from '../components/media/EntityMediaDialog'
+import { EntityThumbnail } from '../components/media/EntityThumbnail'
+import { mediaApi } from '../services/media-api'
+import type { EntityMedia } from '../types/media'
 
 interface Material {
   id: string
@@ -64,6 +69,7 @@ export default function Materials() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [materialTypes, setMaterialTypes] = useState<MaterialType[]>([])
+  const [media, setMedia] = useState<EntityMedia[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
@@ -86,18 +92,28 @@ export default function Materials() {
   async function fetchData() {
     setLoading(true)
     try {
-      const [matList, empList, typeList] = await Promise.all([
+      const [matList, empList, typeList, mediaList] = await Promise.all([
         dataClient.db.materials.list(),
         dataClient.db.employees.list(),
         dataClient.db.materialTypes.list(),
+        mediaApi.list('material'),
       ])
       setMaterials(matList as Material[])
       setEmployees(empList as Employee[])
       setMaterialTypes(typeList as MaterialType[])
+      setMedia(mediaList)
     } catch (error) {
       toast.error('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function refreshMedia() {
+    try {
+      setMedia(await mediaApi.list('material'))
+    } catch {
+      toast.error('Impossible d’actualiser les images')
     }
   }
 
@@ -159,11 +175,11 @@ export default function Materials() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Gestion des Matériels</h2>
-          <p className="text-muted-foreground">Gérez l'inventaire des équipements et leur attribution.</p>
-        </div>
+      <PageHeader
+        eyebrow="Organisation interne"
+        title="Parc interne"
+        description="Gérez les équipements utilisés par l’équipe ONEKANA, leur état, leur numéro de série et leur affectation."
+        action={
         <Dialog open={isAddOpen} onOpenChange={(open) => {
           setIsAddOpen(open)
           if (!open) {
@@ -286,7 +302,8 @@ export default function Materials() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <div className="flex items-center gap-2 max-w-md bg-card p-2 rounded-lg border border-border/50">
         <Search className="w-4 h-4 text-muted-foreground ml-2" />
@@ -324,9 +341,7 @@ export default function Materials() {
                 <TableRow key={mat.id} className="hover:bg-muted/30 transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Package className="w-4 h-4" />
-                      </div>
+                      <EntityThumbnail media={media.find((item) => item.entityId === mat.id && item.isCover) || media.find((item) => item.entityId === mat.id)} alt={mat.name} />
                       <div className="flex flex-col">
                         <span className="font-medium text-foreground">{mat.name}</span>
                         {mat.purchaseDate && <span className="text-xs text-muted-foreground">Acheté le: {new Date(mat.purchaseDate).toLocaleDateString()}</span>}
@@ -360,6 +375,7 @@ export default function Materials() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
+                    <EntityMediaDialog entityType="material" entityId={mat.id} entityLabel={mat.name} onChanged={refreshMedia} />
                     <Button 
                       variant="ghost" 
                       size="icon" 

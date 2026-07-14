@@ -9,7 +9,7 @@ export function AuthRoute({ children }: { children: ReactNode }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f7f7f7] text-sm font-semibold text-muted-foreground">
-        Verification de la session...
+        Vérification de la session...
       </div>
     )
   }

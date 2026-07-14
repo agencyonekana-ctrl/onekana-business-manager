@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { remoteApi } from '../services/remote-api'
 import { unwrapApiData } from '../services/api-client'
 import type { AuthUser } from '../types/auth'
-import { clearAuthToken, getAuthToken, setAuthToken } from '../lib/session-storage'
+import { clearAccessToken, setAccessToken } from '../lib/auth-session'
+import { clearLegacyAuthToken } from '../lib/session-storage'
 
 type LoginCredentials = {
   email: string
@@ -32,27 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true
+    clearLegacyAuthToken()
 
-    async function loadSession() {
-      const token = getAuthToken()
-      if (!token) {
-        if (isMounted) setLoading(false)
-        return
-      }
-
+    async function restoreSession() {
       try {
-        const payload = unwrapApiData<AuthUser>(await remoteApi.auth.me())
-        if (isMounted) setUser(payload)
+        const payload = unwrapApiData<LoginPayload>(await remoteApi.auth.refresh())
+        setAccessToken(payload.access_token)
+        if (isMounted) setUser(payload.user)
       } catch {
-        clearAuthToken()
+        clearAccessToken()
         if (isMounted) setUser(null)
       } finally {
         if (isMounted) setLoading(false)
       }
     }
 
-    loadSession()
-
+    restoreSession()
     return () => {
       isMounted = false
     }
@@ -66,17 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     const payload = unwrapApiData<LoginPayload>(await remoteApi.auth.login(credentials))
-    setAuthToken(payload.access_token)
+    setAccessToken(payload.access_token)
     setUser(payload.user)
   }, [])
 
   const logout = useCallback(async () => {
     try {
       await remoteApi.auth.logout()
-    } catch {
-      // The local session must still be cleared when the API token is already expired.
     } finally {
-      clearAuthToken()
+      clearAccessToken()
       setUser(null)
     }
   }, [])
@@ -94,10 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider')
-  }
-
+  if (!context) throw new Error('useAuth must be used inside AuthProvider')
   return context
 }

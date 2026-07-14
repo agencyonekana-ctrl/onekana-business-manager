@@ -22,14 +22,19 @@ import { Label } from '@/components/ui/label'
 import { dataClient } from '@/lib/data-client'
 import { toast } from 'react-hot-toast'
 import { Site } from '../types'
+import type { EntityMedia } from '@/types/media'
+import { EntityMediaDialog } from '@/components/media/EntityMediaDialog'
+import { EntityThumbnail } from '@/components/media/EntityThumbnail'
 
 interface SitesTabProps {
   sites: Site[]
+  media: EntityMedia[]
   loading: boolean
   onRefresh: () => void
+  onMediaChanged: () => void
 }
 
-export function SitesTab({ sites, loading, onRefresh }: SitesTabProps) {
+export function SitesTab({ sites, media, loading, onRefresh, onMediaChanged }: SitesTabProps) {
   const [search, setSearch] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingSite, setEditingSite] = useState<Site | null>(null)
@@ -127,10 +132,11 @@ export function SitesTab({ sites, loading, onRefresh }: SitesTabProps) {
             {loading ? <TableRow><TableCell colSpan={4} className="text-center">Chargement...</TableCell></TableRow> : 
               filteredSites.map(site => (
                 <TableRow key={site.id}>
-                  <TableCell className="font-medium">{site.name}</TableCell>
+                  <TableCell><div className="flex items-center gap-3"><EntityThumbnail media={media.find((item) => item.entityId === site.id && item.isCover) || media.find((item) => item.entityId === site.id)} alt={site.name} /><span className="font-medium">{site.name}</span></div></TableCell>
                   <TableCell>{site.address}</TableCell>
                   <TableCell>{site.city}</TableCell>
                   <TableCell className="text-right space-x-2">
+                    <EntityMediaDialog entityType="ooh_site" entityId={site.id} entityLabel={site.name} onChanged={onMediaChanged} />
                     <Button variant="ghost" size="icon" onClick={() => { setEditingSite(site); setForm({ name: site.name, address: site.address, city: site.city, coordinates: site.coordinates || '' }); setIsDialogOpen(true); }}><Pencil className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(site.id)}><Trash2 className="w-4 h-4" /></Button>
                   </TableCell>
