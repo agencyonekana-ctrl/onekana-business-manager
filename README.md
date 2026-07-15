@@ -27,4 +27,10 @@ npm run test:e2e
 - Conserver la geographie et la finance avancee desactivees tant que les services associes ne sont pas valides.
 - Executer les controles CI et une recette sur staging avant toute promotion.
 
+## Centre de validation
+
+Le module de supervision est active avec `VITE_ENABLE_APPROVAL_CENTER=true`, uniquement apres migration du service admin. Il permet de traiter les comptes, demandes, campagnes recues et documents sans modifier leur source externe. Les actions disponibles dependent du profil connecte.
+
+La file peut etre actualisee manuellement depuis `Centre de validation`. En production, son actualisation periodique est executee par le service admin.
+
 Les informations d'infrastructure, identifiants et contrats prives sont conserves hors de ce depot public.

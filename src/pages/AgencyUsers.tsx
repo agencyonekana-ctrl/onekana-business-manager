@@ -7,12 +7,17 @@ import { StatusBadge } from '../components/app/StatusBadge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { useApprovalCases } from '../hooks/use-approval-cases'
+import { ApprovalResourceControl } from '../components/approvals/ApprovalResourceControl'
+import { ApprovalCaseDrawer } from '../components/approvals/ApprovalCaseDrawer'
 
 export default function AgencyUsers() {
   const [users, setUsers] = useState<AgencyUser[]>([])
   const [loading, setLoading] = useState(true)
   const [agencyUnavailable, setAgencyUnavailable] = useState(false)
   const [search, setSearch] = useState('')
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const approvals = useApprovalCases('agency_user')
 
   useEffect(() => {
     let active = true
@@ -48,13 +53,13 @@ export default function AgencyUsers() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Activite recue" title="Utilisateurs Agency" description="Consultez les comptes exposes par le service Agency depuis une connexion admin securisee." />
+      <PageHeader eyebrow="Activité reçue" title="Comptes utilisateurs" description="Consultez les comptes enregistrés dans les espaces connectés et signalez uniquement une anomalie nécessitant l’attention de l’administration." />
 
       <Card className="border-border bg-white">
         <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="text-base font-black uppercase">Repertoire Agency</CardTitle>
-            <p className="mt-1 text-sm text-muted-foreground">Les donnees restent accessibles uniquement via le proxy ONEKANA authentifie.</p>
+            <CardTitle className="text-base font-black uppercase">Répertoire des comptes</CardTitle>
+            <p className="mt-1 text-sm text-muted-foreground">Les comptes ordinaires ne nécessitent aucune validation. Utilisez le signalement seulement en cas d’information incohérente ou de comportement suspect.</p>
           </div>
           <StatusBadge tone={agencyUnavailable ? 'red' : 'dark'}>{agencyUnavailable ? 'Indisponible' : `${users.length} comptes`}</StatusBadge>
         </CardHeader>
@@ -85,6 +90,7 @@ export default function AgencyUsers() {
                   <TableHead>Entreprise</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Etat</TableHead>
+                  <TableHead className="text-right">Anomalie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -97,6 +103,7 @@ export default function AgencyUsers() {
                     <TableCell>{user.company || 'Non renseignee'}</TableCell>
                     <TableCell>{user.role || 'Non renseigne'}</TableCell>
                     <TableCell><StatusBadge tone={user.active === false ? 'red' : 'dark'}>{user.active === false ? 'Inactif' : 'Actif'}</StatusBadge></TableCell>
+                    <TableCell className="text-right"><ApprovalResourceControl item={approvals.byExternalId.get(user.id)} resourceType="agency_user" externalId={user.id} title={user.name} subtitle={user.email} companyName={user.company} snapshot={user as unknown as Record<string, unknown>} onOpen={setSelectedCaseId} onCreated={approvals.reload} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -104,6 +111,7 @@ export default function AgencyUsers() {
           )}
         </CardContent>
       </Card>
+      <ApprovalCaseDrawer caseId={selectedCaseId} open={Boolean(selectedCaseId)} onOpenChange={(open) => { if (!open) setSelectedCaseId(null) }} onChanged={approvals.reload} />
     </div>
   )
 }

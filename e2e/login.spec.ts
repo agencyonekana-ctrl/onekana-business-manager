@@ -113,6 +113,47 @@ test('renders received contacts as a read-only supervision list', async ({ page 
   await expect(page.getByRole('button', { name: /nouveau|ajouter|supprimer/i })).toHaveCount(0)
 })
 
+test('offers anomaly reporting for accounts and contacts without a verification action', async ({ page }) => {
+  const supervisor = { ...adminUser, permissions: ['sales.view', 'approvals.view', 'approvals.decide'], modules: ['sales', 'approvals'] }
+  await mockSession(page, supervisor)
+  await page.route('**/api/admin/cases**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[],"meta":{"current_page":1,"per_page":100,"total":0,"last_page":1}}' }))
+  await page.route('**/api/agency/users', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[{"id":"u-1","name":"Utilisateur Test","email":"user@example.test","company":"Entreprise Test","active":true}]}' }))
+  await page.route('**/api/agency/contacts', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{"data":[{"id":"c-1","name":"Contact Test","email":"contact@example.test","company":"Entreprise Test"}]}' }))
+
+  await page.goto('/agency-users')
+  await expect(page.getByRole('button', { name: 'Signaler' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /vérifier/i })).toHaveCount(0)
+
+  await page.goto('/contacts')
+  await expect(page.getByRole('button', { name: 'Signaler' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /vérifier/i })).toHaveCount(0)
+})
+
+test('opens and processes a validation case from the administrative queue', async ({ page }) => {
+  const approvalUser = { ...adminUser, permissions: ['dashboard.view', 'approvals.view', 'approvals.assign', 'approvals.decide', 'approvals.manage'], modules: ['dashboard', 'approvals'] }
+  const approvalCase = {
+    id: '91', subjectId: '10', sourceSystem: 'agency', resourceType: 'agency_contact', externalId: '21',
+    title: 'Demande Entreprise Test', companyName: 'Entreprise Test', snapshot: {}, status: 'pending', priority: 'high',
+    assignedTo: null, assigneeName: null, dueAt: '2026-07-16 10:00:00', syncStatus: 'local_only', version: 1,
+    createdAt: '2026-07-15 10:00:00', updatedAt: '2026-07-15 10:00:00', comments: [], events: [],
+  }
+  await mockSession(page, approvalUser)
+  await page.route('**/api/admin/cases**', (route) => {
+    const pathname = new URL(route.request().url()).pathname
+    if (pathname.endsWith('/assignees')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [approvalUser] }) })
+    if (pathname.endsWith('/91')) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: approvalCase }) })
+    if (route.request().method() === 'GET') return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data: [approvalCase], meta: { current_page: 1, per_page: 20, total: 1, last_page: 1 } }) })
+    return route.fallback()
+  })
+
+  await page.goto('/validations')
+  await expect(page.getByRole('heading', { name: 'Centre de validation' })).toBeVisible()
+  await expect(page.getByText('Demande Entreprise Test')).toBeVisible()
+  await page.getByRole('button', { name: 'Ouvrir', exact: true }).click()
+  await expect(page.getByText('Organisation du contrôle')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Prendre en charge' })).toBeVisible()
+})
+
 test('shows a clear forbidden state when the module is not granted', async ({ page }) => {
   await mockSession(page, { ...adminUser, permissions: ['dashboard.view'], modules: ['dashboard'] })
 

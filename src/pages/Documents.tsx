@@ -28,6 +28,9 @@ import {
 } from '../components/ui/select'
 import { Plus, Search, Trash2, FileText, Download, UploadCloud } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { ApprovalCaseDrawer } from '../components/approvals/ApprovalCaseDrawer'
+import { ApprovalResourceControl } from '../components/approvals/ApprovalResourceControl'
+import { useApprovalCases } from '../hooks/use-approval-cases'
 
 interface Document {
   id: string
@@ -52,6 +55,8 @@ export default function Documents() {
   const [search, setSearch] = useState('')
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const approvals = useApprovalCases('document')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -158,7 +163,7 @@ export default function Documents() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Documents</h2>
-          <p className="text-muted-foreground">Suivez et archivez les documents RH de vos employés.</p>
+          <p className="text-muted-foreground">Classez les documents internes, attribuez leur contrôle et conservez la trace des vérifications.</p>
         </div>
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
@@ -264,7 +269,7 @@ export default function Documents() {
               <TableHead>Employé</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Date d'ajout</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="text-right">Actions et contrôle</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -300,23 +305,27 @@ export default function Documents() {
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-primary"
-                      onClick={() => handleDownload(doc)}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(doc.id, doc.fileUrl)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" title="Télécharger" className="h-8 w-8 text-primary" onClick={() => handleDownload(doc)}>
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Supprimer" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleDelete(doc.id, doc.fileUrl)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <ApprovalResourceControl
+                        item={approvals.byExternalId.get(doc.id)}
+                        resourceType="document"
+                        externalId={doc.id}
+                        title={doc.name}
+                        subtitle={`${doc.type} · ${employeeName(doc.employeeId)}`}
+                        snapshot={{ ...doc }}
+                        onOpen={setSelectedCaseId}
+                        onCreated={approvals.reload}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -324,6 +333,12 @@ export default function Documents() {
           </TableBody>
         </Table>
       </div>
+      <ApprovalCaseDrawer caseId={selectedCaseId} open={Boolean(selectedCaseId)} onOpenChange={(open) => { if (!open) setSelectedCaseId(null) }} onChanged={approvals.reload} />
     </div>
   )
+
+  function employeeName(employeeId: string) {
+    const employee = employees.find((item) => item.id === employeeId)
+    return employee ? `${employee.firstName} ${employee.lastName}` : 'Employé non renseigné'
+  }
 }

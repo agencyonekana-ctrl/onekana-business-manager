@@ -9,6 +9,9 @@ import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
+import { ApprovalSettingsPanel } from '../components/approvals/ApprovalSettingsPanel'
+import { featureFlags } from '../config/features'
+import { can } from '../lib/access-control'
 
 const guideLabels: Record<TourState, string> = {
   not_asked: 'Demande a afficher',
@@ -21,6 +24,7 @@ const guideLabels: Record<TourState, string> = {
 export default function Settings() {
   const { user, logout } = useAuth()
   const [tourState, setLocalTourState] = useState<TourState>(() => getTourState())
+  const canManageValidations = featureFlags.approvalCenter && can(user, 'approvals.manage')
 
   function updateTourState(state: TourState) {
     setTourState(state)
@@ -46,6 +50,7 @@ export default function Settings() {
           <TabsTrigger value="space" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Mon espace</TabsTrigger>
           <TabsTrigger value="preferences" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Preferences</TabsTrigger>
           <TabsTrigger value="account" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Securite du compte</TabsTrigger>
+          {canManageValidations ? <TabsTrigger value="validations" className="border border-border bg-white data-[state=active]:border-primary/30 data-[state=active]:text-primary">Validations</TabsTrigger> : null}
         </TabsList>
 
         <TabsContent value="space" className="mt-6">
@@ -129,6 +134,8 @@ export default function Settings() {
             </Card>
           </div>
         </TabsContent>
+
+        {canManageValidations ? <TabsContent value="validations" className="mt-6"><ApprovalSettingsPanel /></TabsContent> : null}
       </Tabs>
     </div>
   )

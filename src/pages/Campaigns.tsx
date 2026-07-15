@@ -23,6 +23,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { ApprovalCaseDrawer } from '../components/approvals/ApprovalCaseDrawer'
+import { ApprovalResourceControl } from '../components/approvals/ApprovalResourceControl'
+import { useApprovalCases } from '../hooks/use-approval-cases'
 
 type AgencyCampaign = Record<string, any>
 
@@ -71,6 +74,8 @@ export default function Campaigns() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const approvals = useApprovalCases('agency_campaign')
 
   useEffect(() => {
     fetchData()
@@ -146,9 +151,9 @@ export default function Campaigns() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Activite recue"
-        title="Campagnes recues"
-        description="Consultez, filtrez et controlez les campagnes transmises aux equipes ONEKANA. Cette page sert au suivi administratif, pas a la creation de campagnes."
+        eyebrow="Activité reçue"
+        title="Campagnes reçues"
+        description="Consultez, filtrez et contrôlez les campagnes transmises aux équipes ONEKANA. Cette page sert au suivi administratif, pas à la création de campagnes."
       />
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -226,9 +231,9 @@ export default function Campaigns() {
                     <TableRow className="bg-muted/40">
                       <TableHead>Campagne</TableHead>
                       <TableHead>Client</TableHead>
-                      <TableHead>Periode</TableHead>
+                      <TableHead>Période</TableHead>
                       <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                      <TableHead className="text-right">Contrôle</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -249,11 +254,25 @@ export default function Campaigns() {
                           <TableCell>{campaignClient(campaign)}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{campaignPeriod(campaign)}</TableCell>
                           <TableCell><CampaignStatusBadge campaign={campaign} /></TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setSelectedId(id)}>
-                              <Eye className="h-4 w-4" />
-                              Voir
-                            </Button>
+                          <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+                            <div className="flex flex-col items-end gap-2">
+                              <Button variant="ghost" size="sm" className="gap-2" onClick={() => setSelectedId(id)}>
+                                <Eye className="h-4 w-4" />
+                                Voir
+                              </Button>
+                              <ApprovalResourceControl
+                                item={approvals.byExternalId.get(id)}
+                                resourceType="agency_campaign"
+                                externalId={id}
+                                title={campaignName(campaign)}
+                                subtitle={campaignNeed(campaign)}
+                                companyName={campaignClient(campaign)}
+                                snapshot={campaign}
+                                priority={statusBucket(campaign) === 'pending' ? 'high' : 'normal'}
+                                onOpen={setSelectedCaseId}
+                                onCreated={approvals.reload}
+                              />
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
@@ -331,6 +350,7 @@ export default function Campaigns() {
           )}
         </CardContent>
       </Card>
+      <ApprovalCaseDrawer caseId={selectedCaseId} open={Boolean(selectedCaseId)} onOpenChange={(open) => { if (!open) setSelectedCaseId(null) }} onChanged={approvals.reload} />
     </div>
   )
 }

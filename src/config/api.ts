@@ -20,6 +20,14 @@ export const API_ENDPOINTS = {
   },
   adminUsers: endpoint('/admin/users'),
   adminRoles: endpoint('/admin/roles'),
+  approvals: {
+    overview: endpoint('/admin/overview'),
+    cases: endpoint('/admin/cases'),
+    assignees: endpoint('/admin/cases/assignees'),
+    import: endpoint('/admin/cases/import'),
+    settings: endpoint('/admin/validation-settings'),
+    audit: endpoint('/admin/audit-log'),
+  },
 
   employees: endpoint('/employees'),
   departments: endpoint('/departments'),

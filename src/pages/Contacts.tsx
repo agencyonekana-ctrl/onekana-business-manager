@@ -9,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Input } from '../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
+import { ApprovalCaseDrawer } from '../components/approvals/ApprovalCaseDrawer'
+import { ApprovalResourceControl } from '../components/approvals/ApprovalResourceControl'
+import { useApprovalCases } from '../hooks/use-approval-cases'
 
 const commercialStages = [
   { value: 'prospect', label: 'Prospect' },
@@ -27,6 +30,8 @@ export default function Contacts() {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('all')
   const [sectorFilter, setSectorFilter] = useState('all')
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const approvals = useApprovalCases('agency_contact')
 
   useEffect(() => {
     fetchContacts()
@@ -75,9 +80,9 @@ export default function Contacts() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Activite recue"
+        eyebrow="Activité reçue"
         title="Contacts"
-        description="Consultez les contacts enregistres dans ONEKANA, retrouvez leurs coordonnees et suivez leur etat commercial."
+        description="Consultez les contacts enregistrés dans ONEKANA et signalez uniquement les informations anormales ou incohérentes."
       />
 
       <section className="grid gap-3 md:grid-cols-3">
@@ -90,7 +95,7 @@ export default function Contacts() {
         <CardHeader className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle className="text-base font-black uppercase">Repertoire contacts</CardTitle>
+              <CardTitle className="text-base font-black uppercase">Répertoire des contacts</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 Cette vue sert a retrouver rapidement les contacts, leurs entreprises et leurs coordonnees.
               </p>
@@ -153,9 +158,10 @@ export default function Contacts() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Entreprise</TableHead>
                   <TableHead>Secteur</TableHead>
-                  <TableHead>Coordonnees</TableHead>
-                  <TableHead>Etat</TableHead>
-                  <TableHead>Derniere mise a jour</TableHead>
+                  <TableHead>Coordonnées</TableHead>
+                  <TableHead>État</TableHead>
+                  <TableHead>Dernière mise à jour</TableHead>
+                  <TableHead className="text-right">Anomalie</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -183,6 +189,19 @@ export default function Contacts() {
                     </TableCell>
                     <TableCell><ContactStageBadge stage={contactStage(contact)} /></TableCell>
                     <TableCell className="text-sm text-muted-foreground">{contactDate(contact)}</TableCell>
+                    <TableCell className="text-right">
+                      <ApprovalResourceControl
+                        item={approvals.byExternalId.get(contact.id)}
+                        resourceType="agency_contact"
+                        externalId={contact.id}
+                        title={contact.name || 'Contact non renseigné'}
+                        subtitle={contact.email || contactPhone(contact)}
+                        companyName={contactCompany(contact)}
+                        snapshot={contact.raw}
+                        onOpen={setSelectedCaseId}
+                        onCreated={approvals.reload}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -190,6 +209,7 @@ export default function Contacts() {
           )}
         </CardContent>
       </Card>
+      <ApprovalCaseDrawer caseId={selectedCaseId} open={Boolean(selectedCaseId)} onOpenChange={(open) => { if (!open) setSelectedCaseId(null) }} onChanged={approvals.reload} />
     </div>
   )
 }

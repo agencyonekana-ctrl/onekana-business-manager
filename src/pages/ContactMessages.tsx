@@ -9,6 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { EmptyState } from '../components/app/EmptyState'
 import { PageHeader } from '../components/app/PageHeader'
 import { StatusBadge } from '../components/app/StatusBadge'
+import { ApprovalCaseDrawer } from '../components/approvals/ApprovalCaseDrawer'
+import { ApprovalResourceControl } from '../components/approvals/ApprovalResourceControl'
+import { useApprovalCases } from '../hooks/use-approval-cases'
 
 type ContactMessage = AgencyContactMessage
 
@@ -28,6 +31,8 @@ export default function ContactMessages() {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState('all')
   const [sectorFilter, setSectorFilter] = useState('all')
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null)
+  const approvals = useApprovalCases('agency_request')
 
   useEffect(() => {
     fetchMessages()
@@ -82,9 +87,9 @@ export default function ContactMessages() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Activite recue"
+        eyebrow="Activité reçue"
         title="Demandes clients"
-        description="Consultez les demandes reçues et filtrez-les par étape ou secteur. Les modifications seront activées après validation du contrat de synchronisation."
+        description="Qualifiez les demandes reçues, attribuez leur contrôle et suivez chaque décision administrative."
       />
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
@@ -168,8 +173,9 @@ export default function ContactMessages() {
                   <TableHead>Contact</TableHead>
                   <TableHead>Entreprise</TableHead>
                   <TableHead>Besoin</TableHead>
-                  <TableHead>Etape</TableHead>
+                  <TableHead>Étape</TableHead>
                   <TableHead>Prochaine action</TableHead>
+                  <TableHead className="text-right">Contrôle</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -188,6 +194,20 @@ export default function ContactMessages() {
                       <ContactStageBadge stage={contactStage(message)} />
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{nextContactDate(message)}</TableCell>
+                    <TableCell className="text-right">
+                      <ApprovalResourceControl
+                        item={approvals.byExternalId.get(message.id)}
+                        resourceType="agency_request"
+                        externalId={message.id}
+                        title={contactNeed(message)}
+                        subtitle={message.name || message.email || undefined}
+                        companyName={contactCompany(message)}
+                        snapshot={message.raw}
+                        priority="high"
+                        onOpen={setSelectedCaseId}
+                        onCreated={approvals.reload}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -195,7 +215,7 @@ export default function ContactMessages() {
           )}
         </CardContent>
       </Card>
-
+      <ApprovalCaseDrawer caseId={selectedCaseId} open={Boolean(selectedCaseId)} onOpenChange={(open) => { if (!open) setSelectedCaseId(null) }} onChanged={approvals.reload} />
     </div>
   )
 }

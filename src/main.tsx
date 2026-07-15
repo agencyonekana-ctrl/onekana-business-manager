@@ -36,6 +36,7 @@ const Invoices = lazy(() => import('./pages/Invoices'))
 const Geography = lazy(() => import('./pages/Geography'))
 const AgencyUsers = lazy(() => import('./pages/AgencyUsers'))
 const AdminUsers = lazy(() => import('./pages/AdminUsers'))
+const ApprovalCenter = lazy(() => import('./pages/ApprovalCenter'))
 
 function loading(label = 'Chargement...') {
   return <div className="py-16 text-center text-sm font-semibold text-muted-foreground">{label}</div>
@@ -62,6 +63,7 @@ function App() {
               <DashboardLayout>
                 <Routes>
                   <Route path="/" element={protect(<Dashboard />, 'dashboard', 'dashboard.view')} />
+                  <Route path="/validations" element={featureFlags.approvalCenter ? protect(<ApprovalCenter />, 'approvals', 'approvals.view') : <Navigate to="/" replace />} />
                   <Route path="/employees" element={protect(<Employees />, 'team', 'team.view')} />
                   <Route path="/departments" element={protect(<Departments />, 'administration', 'administration.view')} />
                   <Route path="/campaigns" element={protect(<Campaigns />, 'sales', 'sales.view')} />

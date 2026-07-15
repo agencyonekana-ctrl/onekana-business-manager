@@ -4,6 +4,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   Building2,
   Calendar,
+  ClipboardCheck,
   ChevronDown,
   ChevronRight,
   Contact,
@@ -58,6 +59,7 @@ type MenuGroup = {
 }
 
 const dashboardItem: MenuItem = { icon: LayoutDashboard, label: 'Tableau de bord', path: '/', moduleKey: 'dashboard', permission: 'dashboard.view' }
+const approvalItem: MenuItem = { icon: ClipboardCheck, label: 'Centre de validation', path: '/validations', moduleKey: 'approvals', permission: 'approvals.view' }
 
 const menuGroups: MenuGroup[] = [
   {
@@ -133,9 +135,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
     .map((group) => ({ ...group, items: group.items.filter((item) => hasAccess(user, item)) }))
     .filter((group) => group.items.length > 0), [user])
   const visibleDashboard = hasAccess(user, dashboardItem)
+  const visibleApprovals = featureFlags.approvalCenter && hasAccess(user, approvalItem)
   const activeGroup = visibleGroups.find((group) => group.items.some((item) => matchesPath(location.pathname, item.path)))
   const activeGroupId = activeGroup?.id
-  const activeItem = [dashboardItem, ...visibleGroups.flatMap((group) => group.items)].find((item) => matchesPath(location.pathname, item.path))
+  const activeItem = [dashboardItem, approvalItem, ...visibleGroups.flatMap((group) => group.items)].find((item) => matchesPath(location.pathname, item.path))
   const [openGroup, setOpenGroup] = useState<string | null>(() => getOpenNavigationGroup())
 
   useEffect(() => {
@@ -172,8 +175,13 @@ function DashboardShell({ children }: { children: ReactNode }) {
 
         <SidebarContent className="px-2 py-3">
           {visibleDashboard && (
-            <SidebarMenu className="mb-3">
+            <SidebarMenu className="mb-1">
               <NavigationItem item={dashboardItem} active={location.pathname === '/'} onNavigate={closeMobileNavigation} />
+            </SidebarMenu>
+          )}
+          {visibleApprovals && (
+            <SidebarMenu className="mb-3">
+              <NavigationItem item={approvalItem} active={matchesPath(location.pathname, approvalItem.path)} onNavigate={closeMobileNavigation} />
             </SidebarMenu>
           )}
 

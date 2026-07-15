@@ -7,6 +7,7 @@ export type ModuleKey =
   | 'finance'
   | 'administration'
   | 'settings'
+  | 'approvals'
 
 export type Permission =
   | '*'
