@@ -60,7 +60,7 @@ export function SitesTab({ sites, media, loading, onRefresh, onMediaChanged }: S
       setEditingSite(null)
       setForm({ name: '', address: '', city: '', coordinates: '' })
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'enregistrement')
     }
   }
@@ -71,7 +71,7 @@ export function SitesTab({ sites, media, loading, onRefresh, onMediaChanged }: S
       await dataClient.db.oohSites.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

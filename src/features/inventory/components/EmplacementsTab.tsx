@@ -83,7 +83,7 @@ export function EmplacementsTab({
       setEditingEmplacement(null)
       setForm({ name: '', siteId: '', supportId: '', status: 'available' })
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'enregistrement')
     }
   }
@@ -94,7 +94,7 @@ export function EmplacementsTab({
       await dataClient.db.oohEmplacements.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

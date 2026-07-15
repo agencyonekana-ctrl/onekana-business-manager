@@ -18,6 +18,7 @@ import {
   Package,
   ReceiptText,
   Settings,
+  UserCog,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -103,6 +104,7 @@ const menuGroups: MenuGroup[] = [
     id: 'settings',
     label: 'Paramètres',
     items: [
+      { icon: UserCog, label: 'Utilisateurs & accès', path: '/admin-users', moduleKey: 'administration', permission: 'administration.manage' },
       { icon: Settings, label: 'Paramètres', path: '/settings', moduleKey: 'settings', permission: 'settings.manage' },
     ],
   },
@@ -132,15 +134,16 @@ function DashboardShell({ children }: { children: ReactNode }) {
     .filter((group) => group.items.length > 0), [user])
   const visibleDashboard = hasAccess(user, dashboardItem)
   const activeGroup = visibleGroups.find((group) => group.items.some((item) => matchesPath(location.pathname, item.path)))
+  const activeGroupId = activeGroup?.id
   const activeItem = [dashboardItem, ...visibleGroups.flatMap((group) => group.items)].find((item) => matchesPath(location.pathname, item.path))
   const [openGroup, setOpenGroup] = useState<string | null>(() => getOpenNavigationGroup())
 
   useEffect(() => {
-    if (activeGroup) {
-      setOpenGroup(activeGroup.id)
-      setOpenNavigationGroup(activeGroup.id)
+    if (activeGroupId) {
+      setOpenGroup(activeGroupId)
+      setOpenNavigationGroup(activeGroupId)
     }
-  }, [activeGroup?.id, location.pathname])
+  }, [activeGroupId])
 
   if (!user) return null
 

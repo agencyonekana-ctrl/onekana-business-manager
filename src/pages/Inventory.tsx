@@ -43,7 +43,7 @@ export default function Inventory() {
       setMedia([...siteMedia, ...supportMedia, ...emplacementMedia])
       setAllLines(lList)
       setAllCampaigns(cList)
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement de l\'inventaire')
     } finally {
       setLoading(false)

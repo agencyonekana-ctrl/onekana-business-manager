@@ -73,7 +73,7 @@ export default function Documents() {
       ])
       setDocuments(docList as Document[])
       setEmployees(empList as Employee[])
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des documents')
     } finally {
       setLoading(false)
@@ -108,14 +108,14 @@ export default function Documents() {
       setIsAddOpen(false)
       setFormData({ name: '', employeeId: '', type: 'Contrat', file: null })
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'envoi du document')
     } finally {
       setUploading(false)
     }
   }
 
-  async function handleDelete(id: string, fileUrl: string) {
+  async function handleDelete(id: string, _fileUrl: string) {
     if (!confirm('Voulez-vous vraiment supprimer ce document ?')) return
     try {
       // Extract path from URL to remove from storage (optional but cleaner)
@@ -123,7 +123,7 @@ export default function Documents() {
       await dataClient.db.documents.delete(id)
       toast.success('Document supprimé')
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

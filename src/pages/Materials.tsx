@@ -102,7 +102,7 @@ export default function Materials() {
       setEmployees(empList as Employee[])
       setMaterialTypes(typeList as MaterialType[])
       setMedia(mediaList)
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
@@ -139,7 +139,7 @@ export default function Materials() {
       setEditingMaterial(null)
       resetForm()
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Une erreur est survenue')
     }
   }
@@ -162,7 +162,7 @@ export default function Materials() {
       await dataClient.db.materials.delete(id)
       toast.success('Matériel supprimé')
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

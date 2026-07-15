@@ -66,7 +66,7 @@ export function SupportsTab({ supports, media, loading, onRefresh, onMediaChange
       setEditingSupport(null)
       setForm({ name: '', type: 'Digital', dimensions: '' })
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'enregistrement')
     }
   }
@@ -77,7 +77,7 @@ export function SupportsTab({ supports, media, loading, onRefresh, onMediaChange
       await dataClient.db.oohSupports.delete(id)
       toast.success('Élément supprimé')
       onRefresh()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

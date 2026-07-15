@@ -23,4 +23,10 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     },
   },
+  {
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/main.tsx', 'src/hooks/use-auth.tsx', 'src/components/app/OnboardingGuide.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 )

@@ -5,8 +5,8 @@ function resource(url: string) {
   return {
     list: async <T = any>() => unwrapApiData<T[]>(await apiFetch(resourceEndpoint(url))),
     get: async <T = any>(id: string) => unwrapApiData<T>(await apiFetch(resourceEndpoint(url, id))),
-    create: <T = any>(data: unknown) => apiFetch<T>(resourceEndpoint(url), { method: 'POST', body: data }),
-    update: <T = any>(id: string, data: unknown) => apiFetch<T>(resourceEndpoint(url, id), { method: 'PUT', body: data }),
+    create: async <T = any>(data: unknown) => unwrapApiData<T>(await apiFetch(resourceEndpoint(url), { method: 'POST', body: data })),
+    update: async <T = any>(id: string, data: unknown) => unwrapApiData<T>(await apiFetch(resourceEndpoint(url, id), { method: 'PUT', body: data })),
     delete: (id: string) => apiFetch(resourceEndpoint(url, id), { method: 'DELETE' }),
   }
 }
@@ -16,10 +16,22 @@ export const remoteApi = {
 
   auth: {
     register: (data: unknown) => apiFetch(API_ENDPOINTS.auth.register, { method: 'POST', body: data }),
-    login: (data: unknown) => apiFetch(API_ENDPOINTS.auth.login, { method: 'POST', body: data }),
+    login: (data: unknown) => apiFetch(API_ENDPOINTS.auth.login, { method: 'POST', body: data, skipAuthRefresh: true, suppressAuthFailure: true }),
     refresh: () => apiFetch(API_ENDPOINTS.auth.refresh, { method: 'POST', skipAuthRefresh: true, suppressAuthFailure: true }),
     logout: () => apiFetch(API_ENDPOINTS.auth.logout, { method: 'POST', skipAuthRefresh: true, suppressAuthFailure: true }),
     me: () => apiFetch(API_ENDPOINTS.auth.me),
+    forgotPassword: (data: { email: string }) => apiFetch(API_ENDPOINTS.auth.forgotPassword, { method: 'POST', body: data, skipAuthRefresh: true, suppressAuthFailure: true }),
+    resetPassword: (data: { token: string, password: string }) => apiFetch(API_ENDPOINTS.auth.resetPassword, { method: 'POST', body: data, skipAuthRefresh: true, suppressAuthFailure: true }),
+  },
+
+  adminUsers: {
+    list: async <T = any>() => unwrapApiData<T[]>(await apiFetch(API_ENDPOINTS.adminUsers)),
+    create: async <T = any>(data: unknown) => unwrapApiData<T>(await apiFetch(API_ENDPOINTS.adminUsers, { method: 'POST', body: data })),
+    update: async <T = any>(id: string, data: unknown) => unwrapApiData<T>(await apiFetch(resourceEndpoint(API_ENDPOINTS.adminUsers, id), { method: 'PATCH', body: data })),
+    invite: (id: string) => apiFetch(resourceActionEndpoint(API_ENDPOINTS.adminUsers, id, 'invite'), { method: 'POST' }),
+  },
+  adminRoles: {
+    list: async <T = any>() => unwrapApiData<T[]>(await apiFetch(API_ENDPOINTS.adminRoles)),
   },
 
   employees: resource(API_ENDPOINTS.employees),
@@ -61,9 +73,19 @@ export const remoteApi = {
   accountingAccounts: resource(API_ENDPOINTS.accountingAccounts),
   accountingJournals: resource(API_ENDPOINTS.accountingJournals),
   accountingEntries: resource(API_ENDPOINTS.accountingEntries),
+  accountingPeriods: resource(API_ENDPOINTS.accountingPeriods),
+  accountingSettings: {
+    get: async () => unwrapApiData(await apiFetch(API_ENDPOINTS.accountingSettings)),
+    update: async (_id: string, data: unknown) => unwrapApiData(await apiFetch(API_ENDPOINTS.accountingSettings, { method: 'PUT', body: data })),
+  },
   trialBalance: resource(API_ENDPOINTS.trialBalance),
   walletAccounts: resource(API_ENDPOINTS.walletAccounts),
   walletTransactions: resource(API_ENDPOINTS.walletTransactions),
   invoices: resource(API_ENDPOINTS.invoices),
   payments: resource(API_ENDPOINTS.payments),
+  financeActions: {
+    issueInvoice: async <T = any>(id: string) => unwrapApiData<T>(await apiFetch(resourceActionEndpoint(API_ENDPOINTS.invoices, id, 'issue'), { method: 'POST' })),
+    reverseEntry: async <T = any>(id: string, reason: string) => unwrapApiData<T>(await apiFetch(resourceActionEndpoint(API_ENDPOINTS.accountingEntries, id, 'reverse'), { method: 'POST', body: { reason } })),
+    closePeriod: async <T = any>(id: string) => unwrapApiData<T>(await apiFetch(resourceActionEndpoint(API_ENDPOINTS.accountingPeriods, id, 'close'), { method: 'POST' })),
+  },
 }

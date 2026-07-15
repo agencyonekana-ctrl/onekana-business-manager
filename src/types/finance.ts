@@ -18,14 +18,33 @@ export type AccountingJournal = {
   type: string
 }
 
+export type AccountingPeriod = {
+  id: string
+  label: string
+  startsOn: string
+  endsOn: string
+  status: 'open' | 'closed'
+  closedAt?: string | null
+}
+
+export type FinanceSettings = {
+  configured: boolean
+  salesAccountId?: string | null
+  receivableAccountId?: string | null
+  taxAccountId?: string | null
+  bankAccountId?: string | null
+  walletAccountId?: string | null
+  expenseAccountId?: string | null
+}
+
 export type AccountingEntryLine = {
   accountId?: string
   account_id?: string
   accountCode?: string
   account_code?: string
   label?: string
-  debit: number
-  credit: number
+  debit: string | number
+  credit: string | number
 }
 
 export type AccountingEntry = {
@@ -37,17 +56,17 @@ export type AccountingEntry = {
   libelle?: string
   reference?: string
   lines?: AccountingEntryLine[]
-  totalDebit?: number
-  totalCredit?: number
+  totalDebit?: string | number
+  totalCredit?: string | number
   status?: string
 }
 
 export type TrialBalanceLine = {
   accountCode: string
   accountLabel: string
-  debit: number
-  credit: number
-  balance: number
+  debit: string | number
+  credit: string | number
+  balance: string | number
 }
 
 export type WalletAccount = {
@@ -56,16 +75,16 @@ export type WalletAccount = {
   nom?: string
   currency?: string
   devise?: string
-  balance?: number
-  solde?: number
+  balance?: string | number
+  solde?: string | number
   status?: string
 }
 
 export type WalletTransaction = {
   id: string
   type: 'inflow' | 'outflow' | 'encaissement' | 'decaissement' | string
-  amount?: number
-  montant?: number
+  amount?: string | number
+  montant?: string | number
   source?: string
   reference?: string
   status?: string
@@ -81,11 +100,13 @@ export type Invoice = {
   client_name?: string
   campaignId?: string
   campaign_id?: string
-  amount?: number
-  montant?: number
-  tax?: number
-  taxe?: number
-  total?: number
+  amount?: string | number
+  montant?: string | number
+  tax?: string | number
+  taxe?: string | number
+  total?: string | number
+  balance?: string | number
+  subtotal?: string | number
   status?: string
   dueDate?: string
   due_date?: string
@@ -97,8 +118,8 @@ export type Payment = {
   invoice_id?: string
   method?: string
   moyen?: string
-  amount?: number
-  montant?: number
+  amount?: string | number
+  montant?: string | number
   date?: string
   reference?: string
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import type { ApiTable } from '../../types/api'
@@ -29,11 +29,7 @@ export function CategoryManager({ title, description, itemLabel, table, onChange
   const [editingItem, setEditingItem] = useState<CategoryItem | null>(null)
   const [name, setName] = useState('')
 
-  useEffect(() => {
-    fetchItems()
-  }, [])
-
-  async function fetchItems() {
+  const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
       const rows = await table.list<CategoryItem>()
@@ -43,7 +39,11 @@ export function CategoryManager({ title, description, itemLabel, table, onChange
     } finally {
       setLoading(false)
     }
-  }
+  }, [table])
+
+  useEffect(() => {
+    fetchItems()
+  }, [fetchItems])
 
   function openDialog(item?: CategoryItem) {
     setEditingItem(item || null)

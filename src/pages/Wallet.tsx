@@ -15,7 +15,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 export default function Wallet() {
   const [accounts, setAccounts] = useState<WalletAccount[]>([])
   const [transactions, setTransactions] = useState<WalletTransaction[]>([])
-  const [form, setForm] = useState({ type: 'inflow', amount: '', source: '', reference: '' })
+  const [form, setForm] = useState({ walletAccountId: '', type: 'inflow', amount: '', source: '', reference: '' })
+  const [accountForm, setAccountForm] = useState({ name: '', code: '' })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
@@ -32,6 +33,7 @@ export default function Wallet() {
       ])
       setAccounts(accountRows)
       setTransactions(transactionRows)
+      setForm((current) => ({ ...current, walletAccountId: current.walletAccountId || accountRows[0]?.id || '' }))
       setError(false)
     } catch {
       setError(true)
@@ -51,13 +53,24 @@ export default function Wallet() {
   async function createTransaction(event: React.FormEvent) {
     event.preventDefault()
     try {
-      await dataClient.db.walletTransactions.create({ ...form, amount: Number(form.amount), status: 'posted' })
-      toast.success('Mouvement Wallet cree')
-      setForm({ type: 'inflow', amount: '', source: '', reference: '' })
+      await dataClient.db.walletTransactions.create({ ...form, amount: form.amount, idempotencyKey: form.reference })
+      toast.success('Mouvement Wallet créé')
+      setForm({ walletAccountId: form.walletAccountId, type: 'inflow', amount: '', source: '', reference: '' })
       fetchData()
     } catch {
-      toast.error('Impossible de creer le mouvement')
+      toast.error('Vérifiez le compte, la référence et la configuration comptable')
     }
+  }
+
+  async function createAccount(event: React.FormEvent) {
+    event.preventDefault()
+    try {
+      const account = await dataClient.db.walletAccounts.create<WalletAccount>(accountForm)
+      toast.success('Compte Wallet créé')
+      setAccountForm({ name: '', code: '' })
+      setForm((current) => ({ ...current, walletAccountId: account.id }))
+      await fetchData()
+    } catch { toast.error('Impossible de créer ce compte Wallet') }
   }
 
   return (
@@ -65,7 +78,7 @@ export default function Wallet() {
       <PageHeader
         eyebrow="Finance"
         title="Onekana Wallet"
-        description="Suivez le portefeuille interne ONEKANA: encaissements, decaissements, references et solde consolide."
+        description="Suivez le portefeuille interne ONEKANA: encaissements, décaissements, références et solde consolidé."
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -78,20 +91,21 @@ export default function Wallet() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black">{balance.toLocaleString()} USD</div>
-            <p className="mt-1 text-xs text-white/60">Calcule depuis les comptes ou mouvements disponibles</p>
+            <p className="mt-1 text-xs text-white/60">Calculé depuis les mouvements validés</p>
           </CardContent>
         </Card>
 
         <Card className="border-primary/15 bg-white lg:col-span-2">
           <CardContent className="p-5">
-            <form onSubmit={createTransaction} className="grid gap-4 lg:grid-cols-[1fr_1fr_1fr_1fr_auto] lg:items-end">
+            <form onSubmit={createTransaction} className="grid gap-4 lg:grid-cols-[1.1fr_1fr_1fr_1fr_1fr_auto] lg:items-end">
+              <div className="space-y-2"><Label>Compte Wallet</Label><Select value={form.walletAccountId} onValueChange={(value) => setForm({ ...form, walletAccountId: value })}><SelectTrigger><SelectValue placeholder="Choisir" /></SelectTrigger><SelectContent>{accounts.map((account) => <SelectItem key={account.id} value={account.id}>{account.name || account.nom}</SelectItem>)}</SelectContent></Select></div>
               <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={form.type} onValueChange={(value) => setForm({ ...form, type: value })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="inflow">Encaissement</SelectItem>
-                    <SelectItem value="outflow">Decaissement</SelectItem>
+                    <SelectItem value="outflow">Décaissement</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -115,14 +129,14 @@ export default function Wallet() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Reference</Label>
+                <Label>Référence unique</Label>
                 <Input
                   value={form.reference}
                   onChange={(event) => setForm({ ...form, reference: event.target.value })}
                   placeholder="REF-001"
                 />
               </div>
-              <Button type="submit" className="gap-2">
+              <Button type="submit" className="gap-2" disabled={!form.walletAccountId || !form.reference}>
                 <Plus className="h-4 w-4" />
                 Ajouter
               </Button>
@@ -130,6 +144,8 @@ export default function Wallet() {
           </CardContent>
         </Card>
       </div>
+
+      {accounts.length === 0 ? <Card><CardHeader><CardTitle>Créer le premier compte Wallet</CardTitle></CardHeader><CardContent><form onSubmit={createAccount} className="grid gap-3 sm:grid-cols-[1fr_0.6fr_auto] sm:items-end"><div className="space-y-2"><Label>Nom</Label><Input value={accountForm.name} onChange={(event) => setAccountForm({ ...accountForm, name: event.target.value })} placeholder="Wallet principal" required /></div><div className="space-y-2"><Label>Code</Label><Input value={accountForm.code} onChange={(event) => setAccountForm({ ...accountForm, code: event.target.value.toUpperCase() })} placeholder="WALLET" required /></div><Button type="submit">Créer</Button></form></CardContent></Card> : null}
 
       <Card className="border-primary/15 bg-white">
         <CardContent className="p-0">
@@ -150,7 +166,7 @@ export default function Wallet() {
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead>Reference</TableHead>
+                  <TableHead>Référence</TableHead>
                   <TableHead className="text-right">Montant</TableHead>
                 </TableRow>
               </TableHeader>

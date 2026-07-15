@@ -27,9 +27,8 @@ import {
   SelectValue
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
-import { Badge } from '../components/ui/badge'
 import { CategoryManager } from '../components/app/CategoryManager'
-import { Plus, Search, Pencil, Trash2, BookMarked, Building2, Phone, Mail, CalendarRange } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, Building2, Phone, Mail, CalendarRange } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
 interface Reservation {

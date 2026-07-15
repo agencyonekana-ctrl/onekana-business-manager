@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { dataClient } from '../lib/data-client'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { 
   Dialog, 
@@ -63,7 +63,7 @@ export default function Schedules() {
       ])
       setSchedules(schList as Schedule[])
       setEmployees(empList as Employee[])
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des plannings')
     }
   }
@@ -75,7 +75,7 @@ export default function Schedules() {
       toast.success('Horaire ajouté')
       setIsAddOpen(false)
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de l\'enregistrement')
     }
   }

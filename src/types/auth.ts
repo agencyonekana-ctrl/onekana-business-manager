@@ -40,4 +40,11 @@ export type AuthUser = {
   roles: string[]
   permissions: Permission[]
   modules: ModuleKey[]
+  isActive?: boolean
+}
+
+export type AdminRole = {
+  id: string
+  name: string
+  key: string
 }

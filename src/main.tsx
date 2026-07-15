@@ -12,6 +12,8 @@ import { featureFlags } from './config/features'
 import type { ModuleKey, Permission } from './types/auth'
 
 const Login = lazy(() => import('./pages/Login'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Employees = lazy(() => import('./pages/Employees'))
 const Departments = lazy(() => import('./pages/Departments'))
@@ -33,6 +35,7 @@ const Wallet = lazy(() => import('./pages/Wallet'))
 const Invoices = lazy(() => import('./pages/Invoices'))
 const Geography = lazy(() => import('./pages/Geography'))
 const AgencyUsers = lazy(() => import('./pages/AgencyUsers'))
+const AdminUsers = lazy(() => import('./pages/AdminUsers'))
 
 function loading(label = 'Chargement...') {
   return <div className="py-16 text-center text-sm font-semibold text-muted-foreground">{label}</div>
@@ -52,6 +55,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={page(<Login />)} />
+          <Route path="/forgot-password" element={page(<ForgotPassword />)} />
+          <Route path="/reset-password" element={page(<ResetPassword />)} />
           <Route path="/*" element={
             <AuthRoute>
               <DashboardLayout>
@@ -78,6 +83,7 @@ function App() {
                   <Route path="/wallet" element={featureFlags.advancedFinance ? protect(<Wallet />, 'finance', 'finance.view') : <Navigate to="/invoices" replace />} />
                   <Route path="/invoices" element={protect(<Invoices />, 'finance', 'finance.view')} />
                   <Route path="/settings" element={protect(<Settings />, 'settings', 'settings.manage')} />
+                  <Route path="/admin-users" element={protect(<AdminUsers />, 'administration', 'administration.manage')} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </DashboardLayout>

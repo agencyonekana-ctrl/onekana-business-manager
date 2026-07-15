@@ -92,7 +92,7 @@ export default function Employees() {
       setDepartments(deptList as Department[])
       setJobTitles(jobList as JobTitle[])
       setEmployeeStatuses(statusList as EmployeeStatus[])
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des données')
     } finally {
       setLoading(false)
@@ -120,7 +120,7 @@ export default function Employees() {
         status: 'Actif'
       })
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Une erreur est survenue')
     }
   }
@@ -131,7 +131,7 @@ export default function Employees() {
       await dataClient.db.employees.delete(id)
       toast.success('Employé supprimé')
       fetchData()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }

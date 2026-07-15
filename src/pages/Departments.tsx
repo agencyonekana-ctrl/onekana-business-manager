@@ -49,7 +49,7 @@ export default function Departments() {
     try {
       const list = await dataClient.db.departments.list()
       setDepartments(list as Department[])
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors du chargement des départements')
     } finally {
       setLoading(false)
@@ -70,7 +70,7 @@ export default function Departments() {
       setEditingDept(null)
       setFormData({ name: '', description: '' })
       fetchDepartments()
-    } catch (error) {
+    } catch {
       toast.error('Une erreur est survenue')
     }
   }
@@ -92,7 +92,7 @@ export default function Departments() {
       await dataClient.db.departments.delete(id)
       toast.success('Département supprimé')
       fetchDepartments()
-    } catch (error) {
+    } catch {
       toast.error('Erreur lors de la suppression')
     }
   }
